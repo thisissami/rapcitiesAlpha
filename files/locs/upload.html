@@ -1,0 +1,411 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+    <script src="http://malsup.github.com/jquery.form.js"></script> 
+
+	<title>Upload System</title>
+	<script type="text/javascript">
+	function prepType(){
+		var options = {
+			beforeSubmit: validateType,
+			success: checkResponse,
+			url:'/loc/newtype',
+			type:'POST',
+			dataType: 'json'
+		}
+		$('#newtypeform').ajaxForm(options);
+	}
+	var types;
+	function prepTypeSelector(functionName){
+		$.get('/loc/getTypes', function(data){
+			if(data.types){
+				$('#display #types').append('Please pick a type from below:<br /><br />');
+				var i; types = data.types;
+				for(i = 0; i < types.length; i++){
+					$('#display #types').append('<a href="javascript:void(0)" onclick="'+functionName+'('+i+')"><img src="/loc/getTypeIcon?_id=' + types[i]._id + '" alt="image should show up..."/>' + types[i].type +'</a><br />');
+				}
+			}
+		});
+	}
+	
+	function prepEditTypeForm(i){
+		$('#display #types').html('<i>Please fill one or both of the following fields in order to edit type</i> <b>'+types[i].type+'</b>: <br /><br />');
+		$('#display #types').append($('#edittypeform').html());
+		$('#display #et-sub').before('<input type="text" name="_id" readonly="readonly" value="'+types[i]._id+'"/>');
+		var options = {
+			beforeSubmit: validateEditType,
+			success: checkResponse,
+			url:'/loc/edittype',
+			type:'POST',
+			dataType: 'json'
+		}
+		$('#editTypeForm').ajaxForm(options);
+		curtype = i
+	}
+	
+	function prepNewLocForm(i){
+		$('#display #types').html('<i>Please fill out information for new location of type</i> '+types[i].type+':<br /><br />');		
+		$('#display #types').append($('#newlocformtop').html());
+		var listadd = '';
+		if(types[i].list) listadd = '<input type="text" name="list" readonly="readonly" value="NOTTHISNORTHELASTONE" size="25"/>';
+		$('#newlocform').prepend('Type ID: <input type="text" name="type" readonly="readonly" value="'+types[i]._id+'" size="5"/><--<b>DO <i>NOT</i> change this text</b>'+listadd+'<br />');
+		if(types[i].fields){
+			var j;
+			for(j= 0; j<types[i].fields.length; j++){
+				if(types[i].fields[j].required)
+					$('#newlocform').append('**');
+				$('#newlocform').append(types[i].fields[j].name +': <input type="text" name="'+types[i].fields[j].name+'" id="custom-'+types[i].fields[j].name+'" size="20"/><br />');
+			}
+		}
+		if(!types[i].list){
+			$('#newlocform').append($('#media').html());
+		}
+		$('#newlocform').append('<input type="submit" id="nl-sub">')
+		var options = {
+			beforeSubmit: validateLoc,
+			success: checkResponse,
+			url:'/loc/newloc',
+			type:'POST',
+			dataType: 'json'
+		}
+		$('#newlocform').ajaxForm(options);
+		curtype = i;
+	}
+	var valedit;
+	function prepEditForm(i){
+		valedit = i;
+		var options = {
+			beforeSubmit: validateEditLoc,
+			success: checkResponse,
+			url:'/loc/editLoc',
+			type:'POST',
+			dataType: 'json'
+		}
+		$('#locupdate'+i).ajaxForm(options);
+		
+	}
+	function validateEditLoc(){
+		if(locs[valedit].list && $('#list'+valedit+' span').length > 1){
+			var length = $('#list'+valedit+' span').length-1;
+			var i;
+			for(i = 0; i < length; i++){
+				var ytid = $('#'+valedit+'ytid'+i).val();
+				var title = $('#'+valedit+'title'+i).val();
+				var RID = $('#'+valedit+'RID'+i).val();
+				if(!((ytid && title && RID) || (!ytid && !title && !RID))){
+					alert('ruh roh! one of your list items isn\'t fully filled or deleted.');
+					return false;
+				}
+			}
+		}
+		else if(!locs[valedit].list && !$('#info'+valedit).val()){
+			alert('ruh-roh! you need to provide some info!'); 
+			return false;
+		}
+		if(!$('#title'+valedit).val()){
+			alert('ruh-roh! you need to provide a title for the loc!');
+			return false;
+		}
+		return true;
+	}
+	var curtype;
+	
+	function validateEditType(){
+		var boolicon = false;
+		var boolcolor = true;
+		if($('#et-icon').val()){
+			boolicon = true;
+		}
+		if(!$('#et-r').val() || isNaN(parseInt($('#et-r').val())) || parseInt($('#et-r').val()) > 256 || parseInt($('#et-r').val()) < 0){
+			boolcolor = false;
+		}
+		if(!$('#et-g').val() || isNaN(parseInt($('#et-g').val())) || parseInt($('#et-g').val()) > 256 || parseInt($('#et-g').val()) < 0){
+			boolcolor = false;
+		}
+		if(!$('#et-b').val() || isNaN(parseInt($('#et-b').val())) || parseInt($('#et-b').val()) > 256 || parseInt($('#et-b').val()) < 0){
+			boolcolor = false;
+		}
+		if(!boolcolor && ($('#et-r').val() || $('#et-g').val() || $('#et-b').val())){
+			alert('one of your color inputs is not okay. either delete them all or put in 3 proper values.');
+			return false;
+		}
+		if(!boolcolor && !boolicon){
+			alert('you need to have at least one thing to change...');
+			return false;
+		}
+		return true;
+	}
+
+	function validateType(){
+		if(!$('#nt-type').val()){
+			alert('ruh roh! you need to supply a type name!')
+			return false;
+		}
+		if(!$('#nt-id').val()){
+			alert('ruh roh! you need to supply a type abbreviation!')
+			return false;
+		}
+		if(!$('[name=list]')[0].checked && !$('[name=list]')[1].checked){
+			alert('ruh roh! you need to supply a list/solo!')
+			return false;
+		}
+		if(!$('#nt-icon').val()){
+			alert('ruh roh! you need to supply an icon!')
+			return false;
+		}
+		if(!$('#nt-r').val() || isNaN(parseInt($('#nt-r').val())) || parseInt($('#nt-r').val()) > 256 || parseInt($('#nt-r').val()) < 0){
+			alert('ruh roh! you need to give a proper red value!');
+			return false;
+		}
+		if(!$('#nt-g').val() || isNaN(parseInt($('#nt-g').val())) || parseInt($('#nt-g').val()) > 256 || parseInt($('#nt-g').val()) < 0){
+			alert('ruh roh! you need to give a proper green value!');
+			return false;
+		}
+		if(!$('#nt-b').val() || isNaN(parseInt($('#nt-b').val())) || parseInt($('#nt-b').val()) > 256 || parseInt($('#nt-b').val()) < 0){
+			alert('ruh roh! you need to give a proper blue value!');
+			return false;
+		}
+		var i;
+		for(i = 0; i<addnew; i++){
+			if(!$('#nt-'+i).val()){
+				alert('ruh roh! you didn\'t fill out one of your custom fields!');
+				return false;
+			}
+			if(!$('[name=r'+i+']')[0].checked && !$('[name=r'+i+']')[1].checked){
+				alert('ruh roh! you have an unfilled requirement!');
+				return false;
+			}
+		}
+		return true;
+	}
+	
+	function validateLoc(){
+		if(!$('#nl-title').val()){
+			alert('ruh roh! you need to supply a title!')
+			return false;
+		}
+		if(!types[curtype].list){
+			if(!$('#nl-info').val()){
+				alert('ruh roh! you need to supply some info! single item here...')
+				return false;
+			}
+			if(!$('#nl-ytid').val()){
+				alert('ruh roh! you need to supply a youtube ID!');
+				return false;
+			}
+		}
+		if(types[curtype].fields){
+			var j;
+			for(j= 0; j<types[curtype].fields.length; j++){
+				if(types[curtype].fields[j].required && !$('#custom-' + types[curtype].fields[j].name).val()){
+					alert('ruh roh! you need to fill required custom field: ' + types[curtype].fields[j].name);
+					return false;
+				}
+			}
+		}
+		return true;
+	}
+	
+	var addnew = 0;
+	function addNew(){
+		$('#addanew').before('Custom Field '+addnew+': <input type="text" name="'+addnew+'"id="nt-'+addnew+'" size="20"/> Required? <input type="radio" name="r'+addnew+'" id="nt-r1'+addnew+'" value="yes"/> Yes <input type="radio" name="r'+addnew+'" id="nt-r2'+addnew+'" value="no"/> No <br />');
+		addnew++;
+		prepType();
+	}
+	var locs;
+	function prepSearch(){
+		var options = {
+			beforeSubmit: validateSearch,
+			success: showResults,
+			url:'/loc/search',
+			type:'POST',
+			dataType: 'json'
+		}
+		$('#searchform').ajaxForm(options);
+	}
+	function validateSearch(){
+		if(!$('#searchid').val() && !$('#searchtitle').val()){
+			alert('you need to type something in in order to search for something...');
+			return false;
+		}
+		return true;
+	}
+	function browse(type){
+		var url = '/loc/browse';
+		switch(type){
+			case 1: url+='?public=jarjarbinks';break;
+			case 2: url+='?private=baboonbutt';break;
+		}
+		$.get(url, showResults);
+	}
+	
+	function showResults(data){
+		if(data.locs){
+			locs = data.locs;
+			var length = data.locs.length;
+			var datahtml = '<b>Please Click on Location Title to Edit</b><br /><br />';
+			var i; 
+			for(i = 0; i < length; i++){
+				datahtml += '<div id="loc'+i+'"><a href="javascript:void(0)" onclick="editLoc('+i+')">'
+				+data.locs[i].title+'</a> of type: '+data.locs[i].type+'</div>';
+			}
+			if(i == 0) datahtml = 'No results found';
+			$('#display #showResults').html(datahtml);
+		}
+	}
+	
+	function addItem(i){
+		var cur = $('#list'+i+' span').length-1;
+		$('#list'+i+' #listadd'+i).before('<span id="list'+i+'item'+cur+'">Title: <input type="text" size="20" name="title'+cur+'" id="'+i+'title'+cur+'"/> Youtube ID: <input type="text" size="20" name="ytid'+cur+'" id="'+i+'ytid'+cur+'"/> RID:<input type="text" size="3" name="RID'+cur+'" id="'+i+'RID'+cur+'" value="'+locs[i].listnum+'"/></span><br />');
+		$('#listnum'+i).val(++locs[i].listnum);
+		prepEditForm(i);
+	}
+	
+	function editList(i){
+		if(locs[i].list){
+			var j;
+			var datahtml='<b>List:<br />  *Super Important* - if you are shifting the order of entries around, make sure to move the RID along with the other items. Otherwise, links on our site will no longer work.</b><br />'
+			for(j=0; j<locs[i].list.length; j++){
+				datahtml += '<span id="list'+i+'item'+j+'">Title: <input type="text" size="20" name="title'+j+'" id="'+i+'title'+j+'" value="'+locs[i].list[j].title+'"/> Youtube ID: <input type="text" size="20" name="ytid'+j+'" id="'+i+'ytid'+j+'" value="'+locs[i].list[j].ytid+'"/>StreetCred^^:<input type="text" size="5" id="'+i+'streetcred'+j+'" name="streetcred'+j+'"';
+				if(locs[i].list[j].streetcred) datahtml += 'value="'+locs[i].list[j].streetcred+'"';
+				datahtml += '> RID:<input type="text" size="3" name="RID'+j+'" id="'+i+'RID'+j+'" value="'+locs[i].list[j].RID+'"/> </span><br />';
+			}//View Count:<input type="text" size="5" name="vc'+j+'" id="'+i+'vc'+j+'" value="'+locs[i].list[j].vc+'"/>
+			datahtml += '^^ <i>only necessary if Street Cred value is different from standard value for this artist</i><br /><span id="listadd'+i+'"><a href="javascript:void(0)" onclick="addItem('+i+')">Click to Add an Item</a></span> -- ID Counter: <input type="text" size="3" name="listnum" id="listnum'+i+'" value="'+locs[i].listnum+'" readonly="readonly"/><br />To delete an item, leave the title, youtubeID, and RID empty before submitting.<br />';
+		}
+		$('#list'+i).html(datahtml);
+		prepEditForm(i);
+	}
+	
+	function closeLoc(i){
+		if(confirm('You will lose any data you inputted for this location (if you have not saved). Continue?'))
+			$('#loc'+i).html('<a href="javascript:void(0)" onclick="editLoc('+i+')">'
+			+locs[i].title+'</a> of type: '+locs[i].type);
+	}
+	
+	function editLoc(i){
+		var datahtml = '<br /><a href="javascript:void(0)" onclick="closeLoc('+i+')">Close <b>'+locs[i].title+'</b></a><br /><br /> <form name="locupdate" id="locupdate'+i+'">';
+		for(var key in locs[i]){
+			if(key == 'list'){ datahtml+= '<span id="list'+i+'"><a href="javascript:void(0)" onclick="editList('+i+')"> Click to Edit List </a></span><input type="text" name="list" readonly="readonly" size="1" value="list"/><br />';
+			}
+			else if(key == 'listnum' || key == 'x' || key == 'y' || key == 'viewcount') continue;
+			else{
+				datahtml += key+': <input name="'+key+'" id="'+key+i+'"';
+				switch(key){
+					case('visible'):
+						datahtml += 'type="radio" name="visible" value="visible"'
+						if(locs[i].visible) datahtml += ' checked="checked"';
+						datahtml+='/> True  <input type="radio" name="visible" value="hidden"'
+						if(!locs[i].visible) datahtml += ' checked="checked"';
+						datahtml+='/> False<br />';
+						break;
+					case('_id'):
+					case('type'):
+						datahtml += 'readonly="readonly" ';
+					default: 
+						datahtml += 'type="text" size="20" value="'+locs[i][key]+'"/><br/>';
+						break;
+				}
+			}
+		}
+		datahtml += '<input type="submit" value="Save"/></form>';
+		$('#loc'+i).html(datahtml);
+		prepEditForm(i);
+	}
+	
+	function checkResponse(response){
+		if(response.success){ 
+			var str = 'Operation Successful';
+			if(response.message) str += '\n' + response.message;
+			alert(str);
+		} else alert('There seems to be an error:\n\n'+response.message);
+	}
+		
+	  function setMenu(number){
+		switch(number){
+			case 0: $("div#display").html($('#newtype').html());
+				addnew = 0;
+				prepType();
+				break;	 
+			case 1: $("div#display").html($('#newloc').html());
+				prepTypeSelector('prepNewLocForm');
+				break;
+			case 2: $("div#display").html($('#search').html());
+				prepSearch();
+				break;
+			case 3: $("div#display").html($('#browse').html());
+				break;
+			case 4: $("div#display").html($('#editexistingtype').html());
+				prepTypeSelector('prepEditTypeForm');
+				break;
+		}
+	  }		
+		</script>
+</head>
+<body>
+	<b>Choose A Choice from the Chosen Choices</b> <br /><br />
+<a href="javascript:void(0)" onclick="setMenu(0)"> Create A New Type of Location</a> | <a href="javascript:void(0)" onclick="setMenu(4)">Edit an existing Type</a><br />
+<a href="javascript:void(0)" onclick="setMenu(1)"> Create A New Location from an Existing Type </a> <br />
+<a href="javascript:void(0)" onclick="setMenu(2)"> Search For Location </a> <br />
+<a href="javascript:void(0)" onclick="setMenu(3)"> Browse All Locations </a> <br /><br />
+<i> Please Note, you cannot use the back button in your browser to do anything on this page. It is a single interactive page. You'll need to go through the above menu to reset whatever it is that you want to reset.</i><br />
+____________________________________________<br /><br />
+
+<div id="display"></div>
+<div id="newtype" style="display:none">
+	<b>TYPE CREATION</b><br /><br />
+	<form name="newtype" id="newtypeform">
+		Website: <input type="radio" name="site" id="nt-s" value="rapcities" checked="checked"/> RapCities<br />
+		City: <input type="radio" name="city" id="nt-c" value="nyc" checked="checked"/> NYC <br />
+		Type Name: <input type="text" name="type" id="nt-type" size="20"/> <br />
+		Type ID/Abbreviation (no spaces and non-alphanumeric characters): <input type="text" name="_id" id="nt-id" size="20"/> <br />
+		List or Single Item?: <input type="radio" name="list" id="nt-l1" value="list"/> list  
+							<input type="radio" name="list" id="nt-l2" value="solo"/> solo<br />
+		Color (for text and dot on minimap - 3 numbers 0-255): R<input type="text" id="nt-r" name="r" size="3">G<input type="text" id="nt-g" name="g" size="3">B<input type="text" id="nt-b" name="b" size="3"><br />
+		Icon: <input type="file" name="icon" id="nt-icon" accept="image/*" /><br />
+		<a href="javascript:void(0)" onclick="addNew()" id="addanew">Add a New Field</a><br />
+		<input type="submit" id="nt-sub">
+	</form>
+</div>	
+<div id="newloc" style="display:none">
+	<b>NEW LOCATION CREATION</b><br /><br />
+	<div id="types"></div>	
+</div>
+<div id="editexistingtype" style="display:none">
+	<b>EDIT EXISTING TYPE</b><br /><br />
+	<div id="types"></div>	
+</div>
+<div id="edittypeform" style="display:none">
+	<form name="editTypeForm" id="editTypeForm">
+		Color (for text and dot on minimap - 3 numbers 0-255): R<input type="text" id="et-r" name="r" size="3">G<input type="text" id="et-g" name="g" size="3">B<input type="text" id="et-b" name="b" size="3"><br />
+		Icon: <input type="file" name="icon" id="et-icon" accept="image/*" /><br />
+		<input type="submit" id="et-sub">
+	</form>
+</div>	
+		
+<div id="newlocformtop" style="display:none">
+	<form name="newicon" id="newlocform">
+		**Title (this shows up when hovering over icon): <input type="text" name="title" id="nl-title" size="20"/> <br />
+		*Information (brief blurb that details what this plot is. for single items, this is required and will show up in panel where list of songs usually are): <br /> <textarea name="info" cols="30" rows="4" id="nl-info"></textarea><br/>
+		Street Credit (numbers only): <input type="text" name="streetcred" id="nl-sc" size="20"/> <br />
+		DNA (as few characters as possible): <input type="text" name="DNA" id="nl-dna" size="20"/> <br />
+		Points (leave this for dan - number between 0 and 1, in the form of 0.xyz, 0, or 1):
+		<input type="text" name="points" id="nl-points" size="20"/> <br />
+	</form>	
+	<br />** = always required, * = sometimes required
+</div>
+<div id="media" style="display:none">
+	**Youtube ID (soon other forms of media will exist): <input type="text" name="ytid" id="nl-ytid" size="20"/><br />
+</div>
+<div id="search" style="display:none">
+	<form name="searchform" id="searchform">
+	ID: <input type="text" name="_id" id="searchid" size="20"/> Location Title: <input type="text" name="title" id="searchtitle" size="40"/> <input type="submit" value="Search"/>
+	</form>
+	<div id="showResults"></div>
+</div>
+<div id="browse" style="display:none">
+	<a href="javascript:void(0)" onclick="browse(0)">Show All Locations</a> | <a href="javascript:void(0)" onclick="browse(1)">Show All Publicly Visible Locations</a> | <a href="javascript:void(0)" onclick="browse(2)">Show All Locations Hidden from Public</a><br/ ><br />
+	<div id="showResults"></div>
+</div>
+</body>
+</html>

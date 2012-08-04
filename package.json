@@ -1,0 +1,16 @@
+{
+	"name": "rapcities",
+	"description": "virtual hip-hop city",
+	"author": "thisissami",
+	"version": "0.1.0",
+	"dependencies": {
+		"connect": "2.3.1",
+		"mongodb": "1.0.2",
+		"7digital-api":"0.4.3",
+		"passport":"0.1.10",
+		"passport-facebook":"0.1.3",
+		"connect-redis":"1.4.0",
+		"shortid":"1.0.8"
+	},
+	"engine": "node = 0.6.19"
+}
