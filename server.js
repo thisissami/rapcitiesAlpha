@@ -41,11 +41,11 @@ passport.deserializeUser(function(userid,done){
 });
 
 passport.use(new fpass({
-		clientID:'300271166724919',
-		clientSecret:'b4ba0065d5002941b871610d00afd80b',
-		//clientID:'134659439991720', //rapcities proper
-		//clientSecret:'43c2b1a5bc972868418383d74a51bfa4', // DON'T FORGET TO SWITCH LOCALHOST HERE
-		callbackURL:'http://localhost:8888/auth/facebook/callback'
+		//clientID:'300271166724919',
+		//clientSecret:'b4ba0065d5002941b871610d00afd80b',
+		clientID:'134659439991720', //rapcities proper
+		clientSecret:'43c2b1a5bc972868418383d74a51bfa4', // DON'T FORGET TO SWITCH LOCALHOST HERE
+		callbackURL:'http://rapcities.com/auth/facebook/callback'
 	},
 	function(accessToken, refreshToken, fbUserData, done){
 		var toUpload = {
@@ -120,7 +120,7 @@ function authorized(){
 		if(req.user){
 			if(req.url == '/logout'){
 				req.logOut();
-				res.writeHead(302, {'location':'http://localhost:8888/login'});
+				res.writeHead(302, {'location':'http://rapcities.com/login'});
 				res.end();
 			}
 			else
@@ -144,7 +144,7 @@ function authorized(){
 					return;
 				}
 				else if(req.url.split('?')[0] == '/auth/facebook/callback'){
-					passport.authenticate('facebook', {failureRedirect: '/failbook', 'successRedirect':'http://localhost:8888/'})(req, res, next);
+					passport.authenticate('facebook', {failureRedirect: '/failbook', 'successRedirect':'http://rapcities.com/'})(req, res, next);
 					return;
 				}
 				else if(req.url.split('?')[0] == '/failbook'){
@@ -188,8 +188,8 @@ function authorized(){
 	checkLoggedIn,
     require('./fileServer')(),
     connect.compress({memLevel:9}),
-    //router).listen(80);
-	router).listen(8888);
+    router).listen(80);
+	//router).listen(8888);
   console.log('Server has started.');
 }
 

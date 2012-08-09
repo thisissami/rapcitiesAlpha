@@ -151,7 +151,7 @@ module.exports = function fileServer(maxage){
     } /*else if(requrl.indexOf('/song/') == 0){ //songID
 		res.writeHead(302, {'location':'http://rapcities.com'});
 		res.end();
-    }*/ else if(req.url == '/upl0d.pde'){ // FROM HERE PLZ!
+    }*/ /*else if(req.url == '/upl0d.pde'){ // FROM HERE PLZ!
 		folder = __dirname + '/files/locs/uploadxy.pde';
 		contentType = 'text/processing';
 	}

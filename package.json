@@ -12,5 +12,5 @@
 		"connect-redis":"1.4.0",
 		"shortid":"1.0.8"
 	},
-	"engine": "node = 0.6.19"
+	"engine": "node = 0.8.4"
 }

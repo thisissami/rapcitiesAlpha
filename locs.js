@@ -1,6 +1,6 @@
 var mongodb = require('mongodb'),
-  //mongoserver = new mongodb.Server('10.112.0.110', 26374),
-  mongoserver = new mongodb.Server('localhost', 26374),
+  mongoserver = new mongodb.Server('10.112.0.110', 26374),
+  //mongoserver = new mongodb.Server('localhost', 26374),
   dbConnector = new mongodb.Db('uenergy', mongoserver);
 var fs = require('fs');
 var gridStore = mongodb.GridStore;
@@ -276,9 +276,7 @@ function searchLoc(req,res){
 		else delete req.body.title;
 		var city = req.body.city;
 		delete req.body.city;
-		
-		// NEEDS FRONT END
-		
+				
 		locs[city].find(req.body).toArray(function(err,docs){returnBrowse(err,docs,res)});
 	}
 }
