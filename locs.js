@@ -5,7 +5,7 @@ var mongodb = require('mongodb'),
 var fs = require('fs');
 var gridStore = mongodb.GridStore;
 var shortID = require('shortid').seed(18).worker(8);
-var locs, types;
+var locs, types, cities;
 dbConnector.open(function(err, DB){
     if(err){
       console.log('oh shit! connector.open error!');
@@ -14,26 +14,52 @@ dbConnector.open(function(err, DB){
     else{
       db = DB;
       console.log('opened successfully');
-      db.createCollection('locs', function(err, artlocs){
+      db.createCollection('cities', function(err, city){
       if(err){
         console.log('oh shit! db.createCollection error!');
         console.log(err);
         return;
       }
-	  locs = artlocs;
+	  cities = city;
+		locs = {};
 			db.createCollection('types', function(err, tipps){
 				if(err){
 					console.log('fuck, types didnt get made: \n'+err);
 				}
 				else{
 					types = tipps;
-					console.log(' locations + types created');
+					cities.find({}).each(function(err,doc){
+						if(err)console.log('OH NO AN ERROR!!!'+err.message);
+						else if(doc){
+							db.createCollection(doc._id+'Locs',function(err,curloc){
+								if(err)console.log('oh shit erroooorrr!!! '+ err.message);
+								else
+									locs[doc._id] = curloc;
+							});
+						}
+						else
+							console.log(' locations + types created');
+					});					
 				}
 			});	
 });
 }
 });
 
+function addCity(req, res){
+	if(req.body && req.body._id){
+		cities.insert(req.body,{safe:true},function(err,doc){
+			if(err) returnError(res,'city insertion: '+err.message);
+			else returnSuccess(res);
+		});
+	}
+}
+function getCities(req,res){
+	cities.find({}).toArray(function(err,docs){
+		if(err) returnError(res,'city retrieval: '+err.message);
+		else returnSuccess(res,null,docs);
+	});
+}
 function newType(req, res){
 	//console.log(req.files.icon);
 	var newtype = req.body;
@@ -138,7 +164,7 @@ function newLoc(req, res){
 	newloc.visible = false;
 //	var newnewloc = JSON.parse(JSON.stringify(newloc));
 //	console.log(newnewloc);
-	locs.insert(newloc,{'safe':true},function(err,doc){
+	locs[req.body.city].insert(newloc,{'safe':true},function(err,doc){
 		if(err) returnError(res,'aww shit locinsertion error!\n\n'+err.message);
 		else{
 			console.log(doc[0]);
@@ -151,7 +177,7 @@ function newLoc(req, res){
 function editLoc(req,res){
 	if(req.body){
 		var loc = req.body;
-		locs.findOne({_id:loc._id}, function(err,doc){
+		locs[loc.city].findOne({_id:loc._id}, function(err,doc){
 			if(err){returnError(res,'editing loc fail: '+err.message)}
 			else{
 				if(doc.x){loc.x = doc.x; loc.y = doc.y;}
@@ -196,7 +222,7 @@ function editLoc(req,res){
 					}
 				}
 				else{loc.viewcount = doc.viewcount}
-				locs.findAndModify({'_id':loc._id}, [['_id', 'asc']], loc,{safe:true}, function(err,newloc) {
+				locs[loc.city].findAndModify({'_id':loc._id}, [['_id', 'asc']], loc,{safe:true}, function(err,newloc) {
 	              if(err) {
 	                console.log(err.message); returnError(res,'editloc insertion error: '+err.message);
 	              }
@@ -208,13 +234,13 @@ function editLoc(req,res){
 }
 
 function editLocation(req,res){
-	if(req.query && req.query._id && req.query.x && req.query.y){
-		locs.findOne({_id:req.query._id},function(err,doc){
+	if(req.query && req.query._id && req.query.x && req.query.y &&req.query.city){
+		locs[req.query.city].findOne({_id:req.query._id},function(err,doc){
 			if(err){returnError(res,'edit location findone error: '+err.message)}
 			else{
 				//doc.x = req.query.x; 
 				//doc.y = req.query.y;
-				locs.findAndModify({'_id':req.query._id}, [['_id', 'asc']], {$set : {
+				locs[req.query.city].findAndModify({'_id':req.query._id}, [['_id', 'asc']], {$set : {
 	                'x' : parseFloat(req.query.x), 'y': parseFloat(req.query.y)}},{safe:true}, function(err,newloc) {
 	              if(err) {
 	                console.log(err.message); returnError(res,'edit location insertion error: '+err.message);
@@ -226,14 +252,14 @@ function editLocation(req,res){
 				});		
 				
 			}
-		})
+		});
 	}
 }
 
 function getTypeIconID(req,res){
 	console.log(req.query);
-	if(req.query && req.query._id){
-		locs.findOne({_id:req.query._id},function(err,doc){
+	if(req.query && req.query._id && req.query.city){
+		locs[req.query.city].findOne({_id:req.query._id},function(err,doc){
 			if(err){returnError(res,'gettypeiconid findone error: '+err.message)}
 			else if(!doc) returnError(res,'ID does not match anything in the database.');
 			else{
@@ -248,27 +274,35 @@ function searchLoc(req,res){
 	if(req.body){
 		if(!req.body._id) delete req.body._id;
 		else delete req.body.title;
-		locs.find(req.body).toArray(function(err,docs){returnBrowse(err,docs,res)});
+		var city = req.body.city;
+		delete req.body.city;
+		
+		// NEEDS FRONT END
+		
+		locs[city].find(req.body).toArray(function(err,docs){returnBrowse(err,docs,res)});
 	}
 }
 
-function isEmpty(obj) {
-  return !Object.keys(obj).length;
+function isEmptyCity(obj) {
+	if(Object.keys(obj).length > 1)
+  		return false;
+	else return true;
 }
 
 function browseLoc(req,res){
-	if(!isEmpty(req.query)){
+	if(req.query.city && !isEmptyCity(req.query)){
 		if(req.query.private)
-			locs.find({'visible':false}).toArray(function(err,docs){returnBrowse(err,docs,res)});
+			locs[req.query.city].find({'visible':false}).toArray(function(err,docs){returnBrowse(err,docs,res)});
 		else if(req.query.public)
-			locs.find({'visible':true}).toArray(function(err,docs){returnBrowse(err,docs,res)});
+			locs[req.query.city].find({'visible':true}).toArray(function(err,docs){returnBrowse(err,docs,res)});
 		else if(req.query.hasLoc)
-			locs.find({'x':{$exists:true}}).toArray(function(err,docs){returnBrowse(err,docs,res)});
+			locs[req.query.city].find({'x':{$exists:true}}).toArray(function(err,docs){returnBrowse(err,docs,res)});
 		else if(req.query.hasLoc && req.query.public)
-			locs.find({'x':{$exists:true},'visible':true}).toArray(function(err,docs){returnBrowse(err,docs,res)});
+			locs[req.query.city].find({'x':{$exists:true},'visible':true}).toArray(function(err,docs){returnBrowse(err,docs,res)});
 	}
-	else
-		locs.find({}).toArray(function(err,docs){returnBrowse(err,docs,res)});
+	else if(req.query.city){
+		locs[req.query.city].find({}).toArray(function(err,docs){if(err)console.log(err);returnBrowse(err,docs,res)});
+	}
 }
 
 function returnBrowse(err,docs,res){
@@ -311,14 +345,14 @@ function getTypeIcon(req,res){
 }
 
 function view(req,res){
-	if(req.query && req.query._id){
+	if(req.query && req.query._id && req.query.city){
 		if(req.query.position){
 			var listkey = {}
 			listkey['list.'+req.query.position+'.viewcount'] =1;
-			locs.update({'_id':req.query._id},{$inc: listkey});
+			locs[req.query.city].update({'_id':req.query._id},{$inc: listkey});
 		}
 		else
-			locs.update({_id:req.query._id},{$inc: {'viewcount':1}});
+			locs[req.query.city].update({_id:req.query._id},{$inc: {'viewcount':1}});
 	}
 	res.end();
 }
@@ -374,8 +408,8 @@ function getEvents(response, query){
     });
 }
 
-function getLocs(response, query){
-    /*if(query.minX){
+/*function getLocs(response, query){
+   /* if(query.minX){
         var minX = parseFloat(query.minX);
         var minY = parseFloat(query.minY);
         var maxX = parseFloat(query.maxX);
@@ -480,9 +514,9 @@ function lerp(min, max, i){
   return min+((max-min)*i);
 }
 
-    }*/
+    }//UP TO HERE BO HAN
     if(query.all){
-	 	locs.find(/*,{'_id':true,'topTracks':true,'7id':true,'x':true,'y':true}*/).toArray(function(err, results){
+	 	locs[req.query.city].find(/*,{'_id':true,'topTracks':true,'7id':true,'x':true,'y':true}).toArray(function(err, results){
             if(!err){
                 //var data = {}
                 //data['results'] = results;
@@ -492,7 +526,7 @@ function lerp(min, max, i){
         });
     }//if no query variables
     else{
-	    locs.find({'visible':true}/*,{'_id':true,'topTracks':true,'7id':true,'x':true,'y':true}*/).toArray(function(err, results){
+	    locs[req.query.city].find({'visible':true},{'_id':true,'topTracks':true,'7id':true,'x':true,'y':true}).toArray(function(err, results){
             if(!err){
                 //var data = {}
                 //data['results'] = results;
@@ -501,7 +535,7 @@ function lerp(min, max, i){
             }
         });
     }
-}
+}*/
 
 exports.newType = newType;
 exports.getTypes = getTypes;
@@ -514,3 +548,5 @@ exports.editLoc = editLoc;
 exports.editLocation = editLocation;
 exports.view = view;
 exports.editType = editType;
+exports.addCity = addCity;
+exports.getCities = getCities;

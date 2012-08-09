@@ -82,7 +82,7 @@ passport.use(new fpass({
       case '/removeSong': users.removeSong(req, res, next); break;
       case '/countSongs': users.countSongs(req, res, next); break;
       case '/isFav': users.isFav(req, res, next); break;
-	  case '/loc/newtype':if(req.user == '4fe486215a805bcf53000001' || req.user == '4fe77c671588a57e47000001' || req.user == '4fe42f6ecef89ced3d000004' || req.user == '4fe23f9b363283a404000001') locations.newType(req,res); break;
+	  case '/loc/newtype':if(authorized()) locations.newType(req,res); break;
 	  case '/loc/getTypes': locations.getTypes(req,res); break;
 	  case '/loc/getTypeIcon': locations.getTypeIcon(req,res); break;
 	  case '/loc/getTypeIconID':if(req.user == '4fe486215a805bcf53000001' || req.user == '4fe77c671588a57e47000001' || req.user == '4fe42f6ecef89ced3d000004' || req.user == '4fe23f9b363283a404000001') locations.getTypeIconID(req,res); break;
@@ -92,10 +92,18 @@ passport.use(new fpass({
 	  case '/loc/editLoc':if(req.user == '4fe486215a805bcf53000001' || req.user == '4fe77c671588a57e47000001' || req.user == '4fe42f6ecef89ced3d000004' || req.user == '4fe23f9b363283a404000001') locations.editLoc(req,res); break;
 	  case '/loc/editLocation':if(req.user == '4fe486215a805bcf53000001' || req.user == '4fe77c671588a57e47000001' || req.user == '4fe42f6ecef89ced3d000004' || req.user == '4fe23f9b363283a404000001') locations.editLocation(req,res); break;
 	  case '/loc/view': locations.view(req,res); break;
-	  case '/loc/edittype':console.log('hello');if(req.user == '4fe486215a805bcf53000001' || req.user == '4fe77c671588a57e47000001' || req.user == '4fe42f6ecef89ced3d000004' || req.user == '4fe23f9b363283a404000001') locations.editType(req,res); break;
+	  case '/loc/edittype':if(req.user == '4fe486215a805bcf53000001' || req.user == '4fe77c671588a57e47000001' || req.user == '4fe42f6ecef89ced3d000004' || req.user == '4fe23f9b363283a404000001') locations.editType(req,res); break;
+	  case '/loc/getCities': locations.getCities(req,res); break;
+	  case '/loc/addCity':if(req.user == '4fe486215a805bcf53000001' || req.user == '4fe77c671588a57e47000001' || req.user == '4fe42f6ecef89ced3d000004' || req.user == '4fe23f9b363283a404000001') locations.addCity(req,res); break;
       default: return;
     }
   }
+
+function authorized(){
+	if(req.user == '4fe486215a805bcf53000001' || req.user == '4fe77c671588a57e47000001' || req.user == '4fe42f6ecef89ced3d000004' || req.user == '4fe23f9b363283a404000001')
+		return true;
+	else return false;
+}
 
 	function checkWWW(req, res, next){
 		if(req.headers.host.match(/^www/)){

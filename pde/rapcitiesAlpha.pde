@@ -196,7 +196,7 @@ var colors = {};
 var locations = new ArrayList();
 
 void setUpLocations(){
-	$.getJSON('http://localhost:8888/loc/browse?hasLoc=8&public=4', function(results){      
+	$.getJSON('http://localhost:8888/loc/browse?city=NYC&hasLoc=8&public=4', function(results){      
       if(results && results.locs){
         for(int i = 0; i < results.locs.length; i++){
             locations.add(results.locs[i]);
@@ -1867,7 +1867,7 @@ void loadVideo(){
 	    player.loadVideoById(location.list[playingVideo].ytid);
 		$.ajax({
 			url: "http://localhost:8888/loc/view",
-			data: {_id:location._id,position:playingVideo}
+			data: {_id:location._id,position:playingVideo,city:'NYC'}
 		});
 	    //updateToolbox(location.list[playingVideo].RID, location._id, location.list[playingVideo].title, location.title);
 	  }
@@ -1875,7 +1875,7 @@ void loadVideo(){
 		player.loadVideoById(location.ytid);
 		$.ajax({
 			url: "http://localhost:8888/loc/view",
-			data: {_id:location._id}
+			data: {_id:location._id,city:'NYC'}
 		});
 		//updateToolbox();
 	 //$("#ytplayer").html("<p>Couldn't find this song on YouTube</p>");
