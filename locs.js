@@ -1,6 +1,6 @@
 var mongodb = require('mongodb'),
-  mongoserver = new mongodb.Server('10.112.0.110', 26374),
-  //mongoserver = new mongodb.Server('localhost', 26374),
+  //mongoserver = new mongodb.Server('10.112.0.110', 26374),
+  mongoserver = new mongodb.Server('localhost', 26374),
   dbConnector = new mongodb.Db('uenergy', mongoserver);
 var fs = require('fs');
 var gridStore = mongodb.GridStore;
@@ -290,16 +290,16 @@ function isEmptyCity(obj) {
 function browseLoc(req,res){
 	if(req.query.city && !isEmptyCity(req.query)){
 		if(req.query.private)
-			locs[req.query.city].find({'visible':false}).toArray(function(err,docs){returnBrowse(err,docs,res)});
+			locs[req.query.city].find({'visible':false}).toArray(function(err,docs){if(err)returnError(res,'Error with browse:'+err.message); else returnBrowse(err,docs,res)});
 		else if(req.query.public)
-			locs[req.query.city].find({'visible':true}).toArray(function(err,docs){returnBrowse(err,docs,res)});
+			locs[req.query.city].find({'visible':true}).toArray(function(err,docs){if(err)returnError(res,'Error with browse:'+err.message); else returnBrowse(err,docs,res)});
 		else if(req.query.hasLoc)
-			locs[req.query.city].find({'x':{$exists:true}}).toArray(function(err,docs){returnBrowse(err,docs,res)});
+			locs[req.query.city].find({'x':{$exists:true}}).toArray(function(err,docs){if(err)returnError(res,'Error with browse:'+err.message); else returnBrowse(err,docs,res)});
 		else if(req.query.hasLoc && req.query.public)
-			locs[req.query.city].find({'x':{$exists:true},'visible':true}).toArray(function(err,docs){returnBrowse(err,docs,res)});
+			locs[req.query.city].find({'x':{$exists:true},'visible':true}).toArray(function(err,docs){if(err)returnError(res,'Error with browse:'+err.message); else returnBrowse(err,docs,res)});
 	}
 	else if(req.query.city){
-		locs[req.query.city].find({}).toArray(function(err,docs){if(err)console.log(err);returnBrowse(err,docs,res)});
+		locs[req.query.city].find({}).toArray(function(err,docs){if(err)returnError(res,'Error with browse:'+err.message); else returnBrowse(err,docs,res)});
 	}
 }
 

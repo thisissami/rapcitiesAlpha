@@ -69,7 +69,7 @@ module.exports = function fileServer(maxage){
 		  break;
 	  case('/pl0dder'):
 	 	if(req.user == '4fe486215a805bcf53000001' || req.user == '4fe77c671588a57e47000001' || req.user == '4fe42f6ecef89ced3d000004' || req.user == '4fe23f9b363283a404000001'){
-			if (files.upl0dder) sendfile('upl0dder',true);
+			if (files.pl0dder) sendfile('pl0dder',true);
 			else readfile('/files/locs/uploader.html','text/html','pl0dder',true)
 		}
 		break;
@@ -151,7 +151,7 @@ module.exports = function fileServer(maxage){
     } /*else if(requrl.indexOf('/song/') == 0){ //songID
 		res.writeHead(302, {'location':'http://rapcities.com'});
 		res.end();
-    }*/ /*else if(req.url == '/upl0d.pde'){ // FROM HERE PLZ!
+    }*/ else if(req.url == '/upl0d.pde'){                        // FROM HERE PLZ!
 		folder = __dirname + '/files/locs/uploadxy.pde';
 		contentType = 'text/processing';
 	}
@@ -205,7 +205,7 @@ module.exports = function fileServer(maxage){
 		res.writeHead(200, files[file].headers);
         res.end(files[file].body);
       }
-      if (acceptEncoding.trim() == '*' || acceptEncoding.match(/\bgzip\b/)) {
+      else if (acceptEncoding.trim() == '*' || acceptEncoding.match(/\bgzip\b/)) {
         res.writeHead(200, files[file+'g'].headers);
         res.end(files[file+'g'].body);
       }

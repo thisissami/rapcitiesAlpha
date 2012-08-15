@@ -1,80 +1,60 @@
 /* @pjs preload="http://localhost:8888/heartbasket.png, http://localhost:8888/wikibio.png, http://localhost:8888/exit.png, http://localhost:8888/heart.svg, http://localhost:8888/greyHeart.svg, http://localhost:8888/facebook,http://localhost:8888/miniNYC.png,http://localhost:8888/logo";*/
-boolean started;
+
+//the above code is used by processingjs to preload images
+
+boolean started; //is there something playing?
 PFont font;
-color[] colors;
-color[] outlineColors;
-Hashmap genres;
 HashMap longText; //used for long text
 Current current; //used to display current song info and controls
 SidePane sidePane; //displays the sidepane
 Map nyc;
-//ArtistInfo artinfo;
 
-var grid,gridLoad;
+var grid,gridLoad; // used to hold grid of images and loading info
 
 //positions of different sections of the screen
-final int ZOOM = 0;
-final int SCROLL = 1;
-int WIDTH,HEIGHT,YBASE,XBASE;
+int WIDTH,HEIGHT;
 int xgrid,ygrid;
-int bannerX, bannerY, bannerXFull, bannerYFull;
 int MINIMAXY; 
-var sponsor;
 var curehovertype = 0;
-var CULTURE = 0;
-var SPONSORS = 1;
+int xlength, ylength, miniRedX,miniRedY;
 
 void setup(){
-  WIDTH = max(700,$(window).width());//screen.width;//950;
-  HEIGHT = max(770,$(window).height());//screen.height;// 635;
-setUpLocations();
-var pathArray = window.location.pathname.split( '/' );
-if(pathArray.length > 0 && pathArray[0] != "songid"){
-	if(pathArray.length < 3)
-		sponsor = pathArray[1];
-	else
-		sponsor = pathArray[3];
-	//alert(sponsor);
-}
-  logo = loadImage("http://localhost:8888/logo");
-$("#parent").css("width",WIDTH).css("height",HEIGHT);
-  if(WIDTH == 700 || HEIGHT == 770){
-	$("body").css("overflow","visible");
-	//$("#dialogWindow").css("position","fixed");
-  }
-//else $("#dialogWindow").css("position","absolute");
-  bannerXFull = 1920;
-  bannerYFull = 1000;
-  bannerX = 20;//WIDTH/bannerXFull*300;
-  bannerY = 30;//HEIGHT/bannerYFull*300;
-  YBASE = 30;
-  XBASE = 0;
-  ygrid = 950*8;
-  xgrid = 1000*8;
-togglePlayer();
-recentlyPlayed = new ArrayList();
-songsToShow = 10;		
-artmode = false;
-  size(WIDTH, HEIGHT);
-  frameRate(30);
-  smooth();
-  rectMode(CORNERS);
-  ellipseMode(CENTER_RADIUS);
-  started = false;
-  font = createFont("Arial", 13);
-  textFont(font);
-  setUpColors();
-  songs = new ArrayList();
-  longText = new HashMap();
-  sidePane = new SidePane(WIDTH-bannerX-284,bannerY);
-  toolBox = new Toolbox();
-  current = new Current();
-  nyc = new Map();
-	grid = new Array(8);
+	WIDTH = max(700,$(window).width());// set width
+	HEIGHT = max(770,$(window).height());// set height
+	setUpLocations(); //get all the locations to draw in the map
+	logo = loadImage("http://localhost:8888/logo"); //logo displayed in top left corner of site
+	$("#parent").css("width",WIDTH).css("height",HEIGHT);
+	if(WIDTH == 700 || HEIGHT == 770){
+		$("body").css("overflow","visible"); //make site scrollable if at minimum resolution
+	}
+	SPLdistanceX = 20; //distance of sidepane from right of app
+	SPLdistanceY = 30; //distance of sidepane from top of app
+	ygrid = 950*8; //total size of pixels in map height
+	xgrid = 1000*8;//total size of pixels in map width
+	togglePlayer(); //enable youtube player
+	recentlyPlayed = new ArrayList(); //recently played videos
+	vidsToShow = 10; //how many videos to display by default in a list in a given page
+	artmode = false; //map is artistic or standard?
+	size(WIDTH, HEIGHT);
+	frameRate(30);
+	smooth();
+	rectMode(CORNERS);
+	ellipseMode(CENTER_RADIUS);
+	started = false; //nothing is playing yet!
+	font = createFont("Arial", 13);
+	textFont(font);
+	colorMode(RGB);
+
+	longText = new HashMap();
+	sidePane = new SidePane(WIDTH-SPLdistanceX-284,SPLdistanceY); //info about + control for current location
+	toolBox = new Toolbox(); //menu bar
+	current = new Current(); //video playback controller (for current video only)
+	nyc = new Map(); //object dealing with functions related to the map
+	grid = new Array(8); //regular 2D array of images to be
 	gridLoad = new Array(8);
-	artgrid = new Array(8);
+	artgrid = new Array(8); //artistic 2D array of images to be
 	artgridLoad = new Array(8);
-	for(int i = 0; i < 8; i++){
+	for(int i = 0; i < 8; i++){ // prep the 2D arrays holding the map images
 		grid[i] = new Array(8);
 		gridLoad[i] = new Array(8);
 		artgrid[i] = new Array(8);
@@ -84,33 +64,29 @@ artmode = false;
 			artgridLoad[i][j] = false;
 		}
 	}
-  //artinfo = new ArtistInfo();
-  facebook = loadImage("http://localhost:8888/facebook");
-  logout = loadImage("http://localhost:8888/exit.png");
-  heartBasket = loadImage("http://localhost:8888/heartbasket.png");
-  heart = loadShape("http://localhost:8888/heart.svg");
-  greyHeart = loadShape("http://localhost:8888/greyHeart.svg");
-  wikibio = loadImage("http://localhost:8888/wikibio.png");
+	facebook = loadImage("http://localhost:8888/facebook");
+	logout = loadImage("http://localhost:8888/exit.png");
+	heartBasket = loadImage("http://localhost:8888/heartbasket.png");
+	heart = loadShape("http://localhost:8888/heart.svg");
+	greyHeart = loadShape("http://localhost:8888/greyHeart.svg");
+	wikibio = loadImage("http://localhost:8888/wikibio.png");
 }
 
-
+/* this function runs every time the browser window is resized. 
+it sets different variables related to positioning to their correct new positions so that
+everything in the app is still displayed properly without issue.*/
 void setUpSize(width,height){
 	if(width != WIDTH || height != HEIGHT){
 		WIDTH = width;
 		HEIGHT = height;
 		$("#parent").css("width",width).css("height",height);
-		 YBASE = 30;
-		 XBASE = 0;
-		//MINIMAXY = HEIGHT-30;
-		size(WIDTH,HEIGHT);
-		xlength = WIDTH;
-		ylength = HEIGHT;
-		PANEMINX = WIDTH-bannerX-284;
+		size(WIDTH,HEIGHT); //
+		xlength = WIDTH; //width of map dislayed on page with
+		ylength = HEIGHT; //height of map displayed on page
+		PANEMINX = WIDTH-SPLdistanceX-284;
 		toolLeft = WIDTH/2 - toolWidth/2;
-	    //INFOMINY = PANEMINY+controlLength;
-	    //PANEMINY = bannerY;
-		PANEMAXX = WIDTH-bannerX;
-		if(HEIGHT < 870){
+		PANEMAXX = WIDTH-SPLdistanceX;
+		if(HEIGHT < 870){ //if the height of the canvas is less than 870, shorten the video list display
 			int x = 870;
 			int i = 0;
 			while(x>HEIGHT && i < 5){
@@ -119,24 +95,22 @@ void setUpSize(width,height){
 			}
 			PANEMAXY = PANEMINY + 558 -57- i*22;
 			MINIMAXY = PANEMAXY + 270;
-			songsToShow = 10-i;
+			vidsToShow = 10-i;
 			yloc = PANEMAXY-18;
 			$('#dialogWindow').css('top',353-i*22-57);
 		}else{
 			PANEMAXY = PANEMINY + 558-57;
 			MINIMAXY = PANEMAXY + 270;
-			songsToShow = 10;
+			vidsToShow = 10;
 			yloc = PANEMAXY-18;
 			$('#dialogWindow').css('top',353-57);
 		}
-		sidePane.resetSize();
-		//PANEMAXY = HEIGHT-300;
+		sidePane.resetSize(); 
 		miniRedX = map(xlength,0,xgrid,0,284);
 		miniRedY = map(ylength,0,ygrid,0,270);
 		nyc.setMins();
 		volX = PANEMINX+40;
 		
-		//yloc = PANEMAXY - 15;
 	    current.play.newPos(PANEMINX+72, yloc);
 	    current.ffwd.newPos(PANEMAXX-20, yloc);
 		seekLeft = PANEMINX+95;
@@ -144,39 +118,13 @@ void setUpSize(width,height){
 		seekRight = PANEMAXX - 40 - timeDisplacement;
 	
 		curLeft = PANEMINX; curRight = PANEMAXX; curTop = PANEMAXY - 230; curBottom = PANEMAXY;
-	  //$('#dialogWindow').css('right',bannerX + "px").css('top',PANEMAXY-200+"px");
 	}
 }
 
 PShapeSVG heart,greyHeart;
 PImage facebook,heartBasket,logout,wikibio;
 
-void setUpColors(){
-  colorMode(RGB);
-  colors = new color[10];
-  outlineColors = new color[10];
-  colors[0] = color(255,0,0);
-  colors[1] = color(255,103,0);
-  colors[2] = color(255,182,0);
-  colors[3] = color(231,255,0);
-  colors[4] = color(0,255,18);
-  colors[5] = color(0,255,212);
-  colors[6] = color(0,104,155);
-  colors[7] = color(149,0,255);
-  colors[8] = color(248,0,255);
-  colors[9] = color(255,3,141);
-  outlineColors[0] = color(0,153,153);
-  outlineColors[1] = color(100,168,209);
-  outlineColors[2] = color(133,133,232);
-  outlineColors[3] = color(230,113,255);
-  outlineColors[4] = color(255,128,157);
-  outlineColors[5] = color(255,176,128);
-  outlineColors[6] = color(255,195,100);
-  outlineColors[7] = color(249,243,140);
-  outlineColors[8] = color(222,244,130);
-  outlineColors[9] = color(204,255,123);
-}
-
+//draw all the various things that get displayed in the app
 void draw(){
   nyc.draw();
   imageMode(CORNER);
@@ -186,16 +134,17 @@ void draw(){
 	if(location && location.list && location.list.length)  toolBox.draw();
 	current.draw();
   if(curloc > -1)
-		drawHoverInfo(curloc);
+		nyc.drawHoverInfo(curloc);
 }
 
-var location;
-var icons = new HashMap();
-var media = {};
-var colors = {};
-var locations = new ArrayList();
+var location; //current location
+var icons = new HashMap(); //icon images that correspond to the various types
+//var media = {}; // what type of media does each type contain? (for now all youtube videos)
+var colors = {}; //color of each type (as shown on minimap and as displayed in hovertext)
+var locations = new ArrayList(); //list of all the locations
 
-void setUpLocations(){
+/*fill locations, colors, icons, etc. with all the appropriate data*/
+void setUpLocations(){ 
 	$.getJSON('http://localhost:8888/loc/browse?city=NYC&hasLoc=8&public=4', function(results){      
       if(results && results.locs){
         for(int i = 0; i < results.locs.length; i++){
@@ -208,12 +157,13 @@ void setUpLocations(){
 			for(int i = 0; i < results.types.length; i++){
 				icons.put(results.types[i]._id, requestImage('http://localhost:8888/loc/getTypeIcon?_id='+results.types[i]._id));
 				colors[results.types[i]._id] = color(results.types[i].r, results.types[i].g, results.types[i].b);
-				media[results.types[i]._id] = results.types[i].mediaType;
+				//media[results.types[i]._id] = results.types[i].mediaType;
 			}
 		}
 	});
 }
 
+/* menu that appears when a location is playing */
 class Toolbox{	
 	boolean overlay;
 	int HEART = 0;
@@ -224,31 +174,34 @@ class Toolbox{
 	
 	Toolbox(){
 		overlay = false;
-		toolHover =  -1;
-		toolTop = PANEMINY;
-		toolFull = 40;
-		toolHalf = toolFull/2;
-		toolWidth = 200;
-		toolLeft = width/2 - toolWidth/2;
+		toolHover =  -1; //what tool is currently hovered over? -1 = none
+		toolTop = PANEMINY; //where is the menu displayed?
+		toolFull = 40; // size of one tool
+		toolHalf = toolFull/2; //half the size of a tool spot (for easy computation below)
+		toolWidth = 200; // size of all tools together
+		toolLeft = width/2 - toolWidth/2; //left most part of the toolbar
 	}
 	
+	//draw the menu
 	void draw(){
 		fill(0); stroke(255);
 		rectMode(CORNERS);
 		rect(toolLeft, toolTop, toolLeft+toolWidth, toolTop+toolFull);
 		
 		shapeMode(CENTER);
-		if(location.list[playingVideo].fav)
+		if(location.list[playingVideo].fav) //draw either the unheart or heart icon
 			shape(heart,toolLeft+toolHalf,toolTop+toolHalf,toolHalf+4, toolHalf+2);
 		else
 			shape(greyHeart,toolLeft+toolHalf,toolTop+toolHalf,toolHalf+4, toolHalf+2);
 
-		imageMode(CENTER);
+		imageMode(CENTER); //draw all the other images for the other tool options
 		image(heartBasket,toolLeft+toolHalf*3,toolTop+toolHalf);
 		image(facebook, toolLeft+toolHalf*5, toolTop+toolHalf, toolFull -5, toolFull -5);
 		image(wikibio, toolLeft+toolHalf*7, toolTop+toolHalf);
 		image(logout, toolLeft+toolHalf*9, toolTop+toolHalf);
 		
+		//see if any of the menu items are currently being hovered over by the mouse
+		//if so, draw the appropriate text info
 		if(mouseY>toolTop && mouseY<toolTop+toolFull&&mouseX>toolLeft&&mouseX<toolLeft+toolWidth){
 			textSize(14); fill(0); stroke(255); rectMode(CORNERS);
 			if(mouseX<toolLeft+toolFull){//heart
@@ -302,7 +255,7 @@ class Toolbox{
 				}
 				break;
 			case(BASKET):break;
-				showAndFillOverlay();
+				showFavorites();
 				break;
 			case(LOGOUT):
 				link('http://localhost:8888/logout');
@@ -315,7 +268,8 @@ class Toolbox{
 		}
 	}
 	
-	void showAndFillOverlay() {  // shows favorite box and loads the favorites
+	// shows favorite box and loads the favorites
+	void showFavorites() {  
 		console.log('here');
 		if(overlay){
 			$('#overlay').dialog('close');
@@ -329,66 +283,34 @@ class Toolbox{
 		}
 	}
 }
-int minX, minY, maxX, maxY;
-int xlength, ylength, miniRedX,miniRedY;
 
-void loadMapPiece(int i, int j){
-	var title;
-	if((i == 0) || (i == 1 && j < 1)){
-		title = "0";
-		title += String(i*8+j+1)+'.grid';
-	}
-	else
-		title = String(i*8+j+1)+'.grid';
-	gridLoad[i][j] = true;
-	grid[i][j] = requestImage('http://localhost:8888/'+title);
-}
-void loadArtMapPiece(int i, int j){
-	var title;
-	if((i == 0) || (i == 1 && j < 1)){
-		title = "0";
-		title += String(i*8+j+1)+'.art.grid';
-	}
-	else
-		title = String(i*8+j+1)+'.art.grid';
-	artgridLoad[i][j] = true;
-	artgrid[i][j] = requestImage('http://localhost:8888/'+title);
-}
+//bools used in secret artmode enabling
 boolean aye = false;
 boolean arr = false;
 
 void keyPressed(){
-	nyc.keyPressed();
+	nyc.keyPressed(); //check if arrow keys are pressed to move around map
+	//otherwise see if artmode is being enabled
 	if(key == 'a'){ aye = true; arr = false; artmode = false;}
 	else if(key == 'r' && aye){arr = true; artmode = false;}
 	else if(key == 't' && aye && arr){artmode = true; alert('you have found the secret artmode! congrats!')}
 	else artmode = false;
 }
 
+int minX, minY, maxX, maxY;
 int miniMidX,miniMidY,midX,midY;
 class Map{
-	PImage miniNYC;
-	int NYCx = 1000;
-	int NYCy = 711;
-	int ox, oy, ocx, ocy;
-	int allX, allY;//grid
-	var widths, heights;//lengths
-	int ominx, ominy;
-	int minix, miniy, maxix, maxiy;
-	boolean opressed = false;
-	boolean miniPressed = false;
+	PImage miniNYC; //image in minimap
+	int ox, oy, ocx, ocy;//respectively mouseX/Y locations and midX/Y locations when mouse pressed (to move map around)
+	var widths, heights;//array of lengths of pixels of each image in the grid
+	int ominx, ominy; // minX/Y locations when mouse pressed (to move map around)
+	boolean opressed = false; // has the mouse been clicked in the main map to move it around?
+	boolean miniPressed = false; // has the mouse been clicked in the minimap to move map around?
 	Map(){
 		miniNYC = loadImage("http://localhost:8888/miniNYC.png");
 		ox = oy = -1;
 		prep();
 	}
-//	2000 x 1422
-	/*
-	"bottom right", "x" : "935.1310068607902", "y" : "850.9446986836866", "_id" : ObjectId("4f650989a0651c0372000003") }
-	{ "name" : "top left", "x" : "725.0560652572382", "y" : "701.8649879537509", "_id" : ObjectId("4f6509e2a0651c0372000004") }
-	
-	*/
-
 	
 	void draw(){
 		drawMap();
@@ -399,45 +321,48 @@ class Map{
 		drawMini();
 	}
 	
+	//draw the map 
 	void drawMap(){
 		imageMode(CENTER); 
 		var totX = 0;//widths[0];
 		var totY = 0;//heights[0];
 		int i;
+		//figure out which image in the grid should be centered
 		for(i = 0; i < 8; i++){
 			totX+=widths[i];
 			if(totX > midX)
 					break;
-//				print(grid[0][i].width + " ");
 		}
 		int j;
 		for(j = 0; j < 8; j++){
 			totY += heights[j];
 			if(totY > midY)
 					break;
-//				print(grid[j][0].height + " ");
 		}
-		grimage(j,i,0+xlength/2-(widths[i]/2-(totX-midX)),0+ylength/2-(heights[j]/2-(totY-midY)));
+		//draw said centered image
+		grimage(j,i,xlength/2-(widths[i]/2-(totX-midX)),ylength/2-(heights[j]/2-(totY-midY)));
+		//depending on where in the grid this image falls, draw the 3-8 images that surround it.
 		if(j > 0)
-			grimage(j-1,i,0+xlength/2-(widths[i]/2-(totX-midX)),0+ylength/2-heights[j] - (heights[j-1]/2-(totY-midY))+1);
+			grimage(j-1,i,xlength/2-(widths[i]/2-(totX-midX)),ylength/2-heights[j] - (heights[j-1]/2-(totY-midY))+1);
 		if(i > 0)
-			grimage(j,i-1,0+xlength/2-widths[i]-(widths[i-1]/2-(totX-midX))+1,0+ylength/2-(heights[j]/2-(totY-midY)));
+			grimage(j,i-1,xlength/2-widths[i]-(widths[i-1]/2-(totX-midX))+1,ylength/2-(heights[j]/2-(totY-midY)));
 		if(j < 7)
-			grimage(j+1,i,0+xlength/2-(widths[i]/2-(totX-midX)),0+ylength/2+heights[j+1]/2+(totY-midY)-1);
+			grimage(j+1,i,xlength/2-(widths[i]/2-(totX-midX)),ylength/2+heights[j+1]/2+(totY-midY)-1);
 		if(i < 7)
-			grimage(j,i+1,0+xlength/2+widths[i+1]/2+(totX-midX)-1,0+ylength/2-(heights[j]/2-(totY-midY)));
+			grimage(j,i+1,xlength/2+widths[i+1]/2+(totX-midX)-1,ylength/2-(heights[j]/2-(totY-midY)));
 		if(j>0 && i>0)
-			grimage(j-1,i-1,0+xlength/2-widths[i]-(widths[i-1]/2-(totX-midX))+1,0+ylength/2-heights[j] - (heights[j-1]/2-(totY-midY))+1);
+			grimage(j-1,i-1,xlength/2-widths[i]-(widths[i-1]/2-(totX-midX))+1,ylength/2-heights[j] - (heights[j-1]/2-(totY-midY))+1);
 		if(j>0 && i<7)
-			grimage(j-1,i+1,0+xlength/2+widths[i+1]/2+(totX-midX)-1,0+ylength/2-heights[j] - (heights[j-1]/2-(totY-midY))+1);
+			grimage(j-1,i+1,xlength/2+widths[i+1]/2+(totX-midX)-1,ylength/2-heights[j] - (heights[j-1]/2-(totY-midY))+1);
 		if(j<7 && i<7)
-			grimage(j+1,i+1,0+xlength/2+widths[i+1]/2+(totX-midX)-1,0+ylength/2+heights[j+1]/2+(totY-midY)-1);
+			grimage(j+1,i+1,xlength/2+widths[i+1]/2+(totX-midX)-1,ylength/2+heights[j+1]/2+(totY-midY)-1);
 		if(j<7 && i>0)
-			grimage(j+1,i-1,0+xlength/2-widths[i]-(widths[i-1]/2-(totX-midX))+1,0+ylength/2+heights[j+1]/2+(totY-midY)-1);
+			grimage(j+1,i-1,xlength/2-widths[i]-(widths[i-1]/2-(totX-midX))+1,ylength/2+heights[j+1]/2+(totY-midY)-1);
 		//println("x: "+midX+"  y: "+midY);
 		//println("i: " + i + "j: " + j);*/
 	}
 	
+	//draw the appropriate image in the appropriate location
 	void grimage(int j, int i, int one, int two){
 		if(artmode){
 			if(artgrid[j][i]){
@@ -465,26 +390,48 @@ class Map{
 		}
 	}
 	
+	//load a standard image as part of a map grid
+	void loadMapPiece(int i, int j){
+		var title;
+		if((i == 0) || (i == 1 && j < 1)){
+			title = "0";
+			title += String(i*8+j+1)+'.grid';
+		}
+		else
+			title = String(i*8+j+1)+'.grid';
+		gridLoad[i][j] = true;
+		grid[i][j] = requestImage('http://localhost:8888/'+title);
+	}
+	//load an artistic image as part of an art map grid
+	void loadArtMapPiece(int i, int j){
+		var title;
+		if((i == 0) || (i == 1 && j < 1)){
+			title = "0";
+			title += String(i*8+j+1)+'.art.grid';
+		}
+		else
+			title = String(i*8+j+1)+'.art.grid';
+		artgridLoad[i][j] = true;
+		artgrid[i][j] = requestImage('http://localhost:8888/'+title);
+	}
+	//put a placeholder "loading" if image isn't downloaded yet
 	void drawLoadingBlock(int j, int i, int one, int two){
 		rectMode(CENTER);noStroke();
 		fill(0); rect(one, two, widths[j],heights[i]);
 		textSize(30);fill(255);
 		text('Loading Map Section',one, two);
 	}
-	
+	//draw the minimap 
 	void drawMini(){
 		imageMode(CORNERS);
-		image(miniNYC,PANEMINX,PANEMAXY,PANEMAXX,MINIMAXY);
-		/*minix = map(minX, 0, 2000, 0, 284);
-		maxix = map(maxX, 0, 2000, 0, 284);
-		miniy = map(minY, 0, 1422, 0, 270);
-		maxiy = map(maxY, 0, 1422, 0, 270);*/
+		image(miniNYC,PANEMINX,PANEMAXY,PANEMAXX,MINIMAXY); //daw minimap
 		rectMode(CENTER);
 		noFill();
 		strokeWeight(1);
-		stroke(colors[0]);
-		rect(PANEMINX+miniMidX,PANEMAXY+miniMidY,miniRedX,miniRedY);
+		stroke(color(255,0,0));
+		rect(PANEMINX+miniMidX,PANEMAXY+miniMidY,miniRedX,miniRedY); //draw red square indicating current location
 		ellipseMode(CENTER);
+		//draw the locations within the minimap
 		for(int i = 0; i < locations.size(); i++){
 			var cur = locations.get(i);
 			fill(colors[cur.type]); stroke(colors[cur.type]);
@@ -493,8 +440,6 @@ class Map{
 			else
 				ellipse(map(cur.x, 531.749,531.749+853,PANEMINX,PANEMAXX),map(cur.y,231.083,231.083+810,PANEMAXY,MINIMAXY),3,3);
 		}
-	//	fill(255); rect(PANEMAXX,PANEMAXY+270,10,10);
-		//rect(PANEMINX+minix,PANEMAXY+miniy,PANEMINX+maxix,PANEMAXY+maxiy);
 	}
 	
 	void prep(){
@@ -502,17 +447,15 @@ class Map{
 		ylength = HEIGHT;
 		miniRedX = map(xlength,0,xgrid,0,284);
 		miniRedY = map(ylength,0,ygrid,0,270);
-		midX = 2600;
-		midY = 4100;
+		midX = 2600; //starting location in the map
+		midY = 4100; //center of map in pixel scale
 		miniMidX = map(midX,0,xgrid,0,284);
 		miniMidY = map(midY,0,ygrid,0,270);
-	//	widths = new Array(1018,1027, 1017, 1028, 1017, 1028, 1017,1037);
-	//	heights = new Array(950 ,970 ,970 ,969 ,979 ,970 ,970 ,979);
 		widths = new Array(1000,1000,1000,1000,1000,1000,1000,1000);
 		heights = new Array(950,950,950,950,950,950,950,950);
-		allX = 1000*8; allY = 950*8;
 		setMins();
 	}
+	//check if mouse is pressed within minimap
 	void miniMousePressed(){
 		if(mouseX>PANEMINX && mouseY>PANEMAXY && mouseX<PANEMAXX && mouseY<MINIMAXY){
 			miniPressed = true;
@@ -521,7 +464,7 @@ class Map{
 			miniToMaxi();
 		}
 	}
-	
+	//see if mminimap is being dragged
 	void miniMouseDragged(){
 		if(miniPressed){
 			miniMidX = min(max(miniRedX/2,mouseX - PANEMINX),284-miniRedX/2);
@@ -529,6 +472,7 @@ class Map{
 			miniToMaxi();
 		}
 	}
+	//convert the minimap location to regular map scale and set map to said position
 	void miniToMaxi(){
 		midX = map(miniMidX,0,284,0,xgrid);
 		midY = map(miniMidY,0,270,0,ygrid);
@@ -539,7 +483,7 @@ class Map{
 		miniPressed = false;
 	}
 	boolean once = false;
-	
+	//move map around using arrow keys
 	void keyPressed(){
 		if(key == CODED){
 			switch(keyCode){
@@ -550,21 +494,18 @@ class Map{
 			}
 		}
 	}
-	
+	//draw locations within the map
 	void drawLocations(){
 		imageMode(CENTER);
 		curloc = -1;
 		for(int i = 0; i < locations.size(); i++){
 			var cur = locations.get(i);
+			//if the current location we're looking at is within the currently displayed map area
 			if(cur.x < maxX+10 && cur.x > minX-10 && cur.y < maxY+15 && cur.y > minY-15 && icons.get(cur.type).width > 0){
 				var x = map(cur.x,minX,maxX,0,WIDTH);
 				var y = map(cur.y,minY,maxY,0,HEIGHT);
-				if(mouseX < x+15 && mouseX > x-15 && mouseY < y+15 && mouseY > y-15
-					&& (mouseX < PANEMINX || mouseX > PANEMAXX || mouseY < PANEMINY || mouseY > MINIMAXY)){
-					image(icons.get(cur.type),x,y);
-					curloc = i;
-				}
-				else if(location && cur._id==location._id){
+				// check if current location is the currently open one - if so draw it's info
+				if(location && cur._id==location._id){
 					image(icons.get(cur.type),x,y);
 				    textSize(18);
 				    int xlength = textWidth(cur.title);
@@ -578,12 +519,34 @@ class Map{
 				    textAlign(LEFT,TOP);
 				    text(cur.title, x-xlength/2, y-50);
 			    }
+				//check if mouse is hovering over location
+				else if(mouseX < x+15 && mouseX > x-15 && mouseY < y+15 && mouseY > y-15
+					&& (mouseX < PANEMINX || mouseX > PANEMAXX || mouseY < PANEMINY || mouseY > MINIMAXY)){
+					image(icons.get(cur.type),x,y);
+					curloc = i;
+				}
+				//otherwise draw location without anything fancy
 				else
 					image(icons.get(cur.type),x,y);
 			}
 		}
 	}
+	//draw info about location while mouse is there
+	void drawHoverInfo(int i){
+	    var loc = locations.get(i);
+	    textSize(18);
+	    int xlength = textWidth(loc.title);
+	    stroke(colors[loc.type]);
+	    fill(0);
+		rectMode(CORNERS);
+	    rect(mouseX, mouseY-33,mouseX+xlength+12, mouseY-7,10);
+
+	      fill(colors[loc.type]);
+	    textAlign(LEFT,TOP);
+	    text(loc.title, mouseX+6, mouseY-30);
+	}
 	
+	// if mouse pressed in map
 	void mousePressed(){
 		ox = mouseX;
 		oy = mouseY;
@@ -593,7 +556,7 @@ class Map{
 		ominy = minY;
 		opressed = true;
 	}
-	
+	// if mouse dragged in regular map
 	void mouseDragged(){
 		if(opressed){
 			midX = ocx - (mouseX-ox);
@@ -610,14 +573,9 @@ class Map{
 			miniMidY = map(midY,0,ygrid,0,270);
 			
 			setMins();
-			/*
-			minX = ominx + ocx - midX;
-			maxX = minX + xdif*2;
-			minY = ominy + ocy - curNYCy;
-			maxY = minY + ydif*2;*/
 		}
 	}
-	
+	//set all the min variables so that everything is displayed properly when converting between various scales
 	void setMins(){
 		minX = map(midX-xlength/2,0,xgrid,531.749,531.749+853);
 		maxX = map(midX+xlength/2,0,xgrid,531.749,531.749+853);
@@ -636,20 +594,6 @@ class Map{
 
 var curVid = -1; var curloc = -1;
 
-void drawHoverInfo(int i){
-    var loc = locations.get(i);
-    textSize(18);
-    int xlength = textWidth(loc.title);
-    stroke(colors[loc.type]);
-    fill(0);
-	rectMode(CORNERS);
-    rect(mouseX, mouseY-33,mouseX+xlength+12, mouseY-7,10);
-
-      fill(colors[loc.type]);
-     // fill(outlineColors[genres.get(songs.get(hoverSong).genre)]);
-    textAlign(LEFT,TOP);
-    text(loc.title, mouseX+6, mouseY-30);
-}
 
 void mouseClicked(){
   if(curloc >= 0){
@@ -707,12 +651,6 @@ void mouseReleased(){
 }
 
 int hoverSong = -1;
-//float[][] temp = new float[36][2]; //used to show the entirely returned json
-
-int songGlow = 1;
-int songGlowWait = 0;
-boolean songGlowUp = true;
-
   
 void resetSongs(){
   for(int i = songs.size()-1; i > -1; i--){
@@ -1044,7 +982,7 @@ class SidePane{
     PANEMINY = miny;
     controlLength = 57;
     INFOMINY = PANEMINY;//+controlLength;
-	PANEMAXX = WIDTH-bannerX;
+	PANEMAXX = WIDTH-SPLdistanceX;
 	backPageHover = forwardPageHover = false;
 	if(HEIGHT < 870){
 		int x = 870;
@@ -1055,7 +993,7 @@ class SidePane{
 		}
 		PANEMAXY = PANEMINY + 558-controlLength - i*22;
 		$('#dialogWindow').css('top',353-i*22-controlLength);
-		songsToShow = 10-i;
+		vidsToShow = 10-i;
 		yloc = PANEMAXY-18;
 	}else PANEMAXY = PANEMINY + 558-controlLength; 
 	MINIMAXY = PANEMAXY + 270;
@@ -1146,10 +1084,10 @@ class SidePane{
 	}*/
 	void resetSize(){
 		if(location && location.list){
-			while(pageToShow*songsToShow >= location.list.length){
+			while(pageToShow*vidsToShow >= location.list.length){
 				pageToShow--;
 			}
-			totalPagesToShow = ceil(location.list.length/songsToShow);
+			totalPagesToShow = ceil(location.list.length/vidsToShow);
 		}
 	}
 	
@@ -1173,8 +1111,8 @@ class SidePane{
 		textSize(16);
 		curVid = -1;
 		if(location.list){
-			int tot = min(songsToShow,location.list.length-pageToShow*songsToShow);
-			int base = pageToShow*songsToShow;
+			int tot = min(vidsToShow,location.list.length-pageToShow*vidsToShow);
+			int base = pageToShow*vidsToShow;
 			for(int i = base; i < base+tot; i++){
 				if(i == playingVideo){
 					fill(colors[location.type]);
@@ -1192,32 +1130,32 @@ class SidePane{
 			}
 			
 			//show pages if there's enough songs for that.
-			if(songsToShow < location.list.length){
+			if(vidsToShow < location.list.length){
 				textSize(14);
-				text(pageToShow+1+"/"+totalPagesToShow, PANEMAXX - 46, INFOMINY+30+songsToShow*22);
-				if(pageToShow > 0 && mouseX > PANEMAXX-64 && mouseX < PANEMAXX-46 && mouseY < INFOMINY+43+songsToShow*22 && mouseY > INFOMINY+35+songsToShow*22){
-					fill(colors[2]);
-					text('<',PANEMAXX-58,INFOMINY+30+songsToShow*22);
-					text('<',PANEMAXX-64,INFOMINY+30+songsToShow*22);
+				text(pageToShow+1+"/"+totalPagesToShow, PANEMAXX - 46, INFOMINY+30+vidsToShow*22);
+				if(pageToShow > 0 && mouseX > PANEMAXX-64 && mouseX < PANEMAXX-46 && mouseY < INFOMINY+43+vidsToShow*22 && mouseY > INFOMINY+35+vidsToShow*22){
+					fill(color(255,182,0));
+					text('<',PANEMAXX-58,INFOMINY+30+vidsToShow*22);
+					text('<',PANEMAXX-64,INFOMINY+30+vidsToShow*22);
 					fill(255);
 					backPageHover = true;
 				}
 				else{
 					backPageHover = false;
-					text('<',PANEMAXX-58,INFOMINY+30+songsToShow*22);
-					text('<',PANEMAXX-64,INFOMINY+30+songsToShow*22);
+					text('<',PANEMAXX-58,INFOMINY+30+vidsToShow*22);
+					text('<',PANEMAXX-64,INFOMINY+30+vidsToShow*22);
 				}
-				if(pageToShow < location.list.length/songsToShow-1 && mouseX > PANEMAXX-23 && mouseX < PANEMAXX-7 && mouseY < INFOMINY+43+songsToShow*22 && mouseY > INFOMINY+35+songsToShow*22){
-					fill(colors[2]);
-					text('>',PANEMAXX-22,INFOMINY+30+songsToShow*22);
-					text('>',PANEMAXX-16,INFOMINY+30+songsToShow*22);
+				if(pageToShow < location.list.length/vidsToShow-1 && mouseX > PANEMAXX-23 && mouseX < PANEMAXX-7 && mouseY < INFOMINY+43+vidsToShow*22 && mouseY > INFOMINY+35+vidsToShow*22){
+					fill(color(255,182,0));
+					text('>',PANEMAXX-22,INFOMINY+30+vidsToShow*22);
+					text('>',PANEMAXX-16,INFOMINY+30+vidsToShow*22);
 					fill(255);
 					forwardPageHover = true;
 				}
 				else{
 					forwardPageHover = false;
-					text('>',PANEMAXX-22,INFOMINY+30+songsToShow*22);
-					text('>',PANEMAXX-16,INFOMINY+30+songsToShow*22);
+					text('>',PANEMAXX-22,INFOMINY+30+vidsToShow*22);
+					text('>',PANEMAXX-16,INFOMINY+30+vidsToShow*22);
 				}
 			}
 		}
@@ -1363,7 +1301,7 @@ class Current{
         arc(volX+3, yloc, 3, 3, -(PI/3), PI/3);
     }
     else{
-      stroke(colors[0]);
+      stroke(color(255,0,0));
       line(volX-9,yloc-8,volX+2,yloc+7);
     }
     if(onVolumeSetter())
@@ -1412,7 +1350,7 @@ class Current{
     fill(0);
     rect(volX-volS-5, yloc-volY, volX-volS+5, yloc+volY);
     if(volume > 0){
-      fill(colors[2]);
+      fill(color(255,182,0));
       noStroke();
       rect(volX-volS-4, yloc+volY-1, volX-volS+4, yloc+volY+1 - volume*volD);
     }
@@ -1620,186 +1558,6 @@ String makeTime(float time){
   return (minutes + ":" + seconds);
 }  
 
-
-
-class ArtistInfo{
-	var canvas = document.getElementById('canvas');
-	var selectDiv = document.getElementById('artist-info');
-
-
-	/**
-	 * Set height and width and X and Y values here.
-	 */
-	var selectDivHeight = 635;
-	var selectDivWidth = 1158;
-	var selectDivX = 9;
-	var selectDivY = 9;
-
-	ArtistInfo(){}
-
-	
-	
-	//invoked when the user presses the select button
-	void showArtistInfo(artist_id) {
-	  selectDiv.style.width = selectDivWidth;
-	  selectDiv.style.height = selectDivHeight;
-	  selectDiv.style.top = selectDivY+"px";
-	  //selectDiv.style.left = selectDivX+"px";
-	  //brings the selectDiv above the canvas
-	  selectDiv.style.zIndex = 1;
-
-	  /* set divs to correct width and height */
-	  $('#center, #popup, #popup-nav, #popup-content').css('width', selectDivWidth+'px');
-	  $('#popup-content').css('height', selectDivHeight+'px');
-
-	  $.getJSON('http://localhost:8888/getArtistInfo?id=' + artist_id, function(data) {
-	    loadBiographies(data.biographies);
-	    loadBlogs(data.blogs);
-	    loadImages(data.images);
-	    loadNews(data.news);
-	    loadVideos(data.videos);
-
-	    //square hover and click
-	    $('.square').hover(function() {
-	      $(this).addClass('square-hover');
-	    },
-	    function() {
-	      $(this).removeClass('square-hover');
-	    }).click(function() {
-	      popupLink($(this).data('url'));
-	    });
-
-	    $('#close').click(function() {
-	      $('#artist-info').css('z-index', '-1');
-	    });
-	  });
-
-	  $('.type').click(function() {
-	    show_type( $(this).data('type') );
-	    $('.type').removeClass('selected-type');
-	    $(this).addClass('selected-type');
-	    $('#popup').hide();
-	    $('#center').show();
-	  }).hover(
-	    function() {
-	      $(this).addClass('hover-type');
-	    },
-	    function() {
-	      $(this).removeClass('hover-type');
-	    }
-	  );
-	  $('#popup-close').click(function() {
-	    $('#popup').hide();
-	    $('#center').show();
-	  });
-	}
-
-	/* Pop up an iframe to view link */
-	function popupLink(url) {
-	  $('#popup-content').attr('src', url);
-	  $('#popup-url').attr('href', url);
-	  $('#center').hide();
-	  $('#popup').show();
-	}
-
-	function loadBiographies(data) {
-	  var bioHtml = "<table><tr>";
-	  $.each(data, function(index, value) {
-	    bioHtml += "<td class='square-td'><div class='square' data-url='" + value.url + "'>" + "<h2>" + value.site + "</h2><p>"+condense(value.text) + "</p></div></td>";
-
-	    if(index == 8) {
-	      bioHtml += "</tr>";
-	      return false;
-	    } else if((index + 1) % 3 == 0) {
-	      bioHtml += "</tr><tr>"
-	    }
-	  });
-	  $('#biographies').html(bioHtml);
-	}
-
-	function condense(text) {
-	  return text.substr(0, 250) + "...";
-	}
-
-	function loadBlogs(data) {
-	  var bioHtml = "<table><tr>";
-	  $.each(data, function(index, value) {
-	    bioHtml += "<td class='square-td'><div class='square' data-url='" + value.url + "'><h2>" + value.name + "</h2><p>" + condense(value.summary) + "</p></div></td>";
-
-	    if(index == 8) {
-	      bioHtml += "</tr>";
-	      return false;
-	    } else if((index + 1) % 3 == 0) {
-	      bioHtml += "</tr><tr>"
-	    }
-	  });
-	  $('#blogs').html(bioHtml);
-	}
-
-	function loadImages(data) {
-	  // var slideHtml = "<div id='slides'><div class='slides_container'>";
-	  // $.each(data, function(index, value) {
-	    // slideHtml += "<div class='slide'><a href='#'><img src='" + value.url + "'></a></div>";
-	  // });
-	  // slideHtml += "</div></div>";
-	  // $('#images').html(slideHtml);
-	  // $('#slides').slides({
-	    // preload: true,
-	    // play: 5000,
-	    // pause: 2500,
-	    // hoverPause: true,
-	    // animationStart: function(current){
-	      // $('.caption').animate({
-	        // bottom:-35
-	      // },100);
-	    // },
-	    // animationComplete: function(current){
-	      // $('.caption').animate({
-	        // bottom:0
-	      // },200);
-	    // },
-	    // slidesLoaded: function() {
-	      // $('.caption').animate({
-	        // bottom:0
-	      // },200);
-	    // }
-	  // });
-	}
-
-	function loadNews(data) {
-	  var bioHtml = "<table><tr>";
-	  $.each(data, function(index, value) {
-	    bioHtml += "<td class='square-td'><div class='square' data-url='" + value.url + "'>" + "<h2>" + value.name + "</h2><p>"+condense(value.summary)+"</p></div></td>";
-
-	    if(index == 8) {
-	      bioHtml += "</tr>";
-	      return false;
-	    } else if((index + 1) % 3 == 0) {
-	      bioHtml += "</tr><tr>"
-	    }
-	  });
-	  $('#news').html(bioHtml);
-	}
-
-	function loadVideos(data) {
-	  var vidHtml = "<table><tr>";
-	  $.each(data, function(index, value) {
-	    vidHtml += "<td class='square-td'><div class='square video' data-url='" + value.url + "'><h2>" + value.title + "</h2><img class='video-thumbnail' src='" + value.image_url + "'></div></td>";
-	    if(index == 8) {
-	      vidHtml += "</tr>";
-	      return false;
-	    } else if((index + 1) % 3 == 0) {
-	      vidHtml += "</tr><tr>"
-	    }
-	  });
-	  $('#videos').html(vidHtml);
-	}
-
-	function show_type(type) {
-	  $('#center').children().css('display', 'none');
-	  $("#" + type).css('display', 'block');
-	}
-}
 
 void videoEnded(){
 	if(location.list && playingVideo < location.list.length-1){

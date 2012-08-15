@@ -1,7 +1,7 @@
 var mongodb = require('mongodb'),
   ObjectID = mongodb.ObjectID,
-  mongoserver = new mongodb.Server('10.112.0.110', 26374),
-  //mongoserver = new mongodb.Server('localhost', 26374),
+  //mongoserver = new mongodb.Server('10.112.0.110', 26374),
+  mongoserver = new mongodb.Server('localhost', 26374),
   dbConnector = new mongodb.Db('uenergy', mongoserver),
   artists, usersCollection;
 
@@ -318,7 +318,7 @@ console.log(favs);
             var d,j;
             for(j=0; j<documents.length; j++) {
               var d = documents[j];
-              res.write('<tr><td><a href="javascript:void(0)" onclick="toggleFav(this, \'' + d.fullid + '\')"><img src="http://rapcities.com/heart.svg" width="20" height="20" border="0" /></a></td>');
+              res.write('<tr><td><a href="javascript:void(0)" onclick="toggleFav(this, \'' + d.fullid + '\')"><img src="http://localhost:8888/heart.svg" width="20" height="20" border="0" /></a></td>');
               res.write('<td><a href="javascript:void(0)" onclick="playSong(0,\''+d.fullid+'\')">' + d.song + '</a></td>');
               res.write('<td><a href="javascript:void(0)" onclick="playSong(1,\''+d.fullid+'\')">' + d.artist + '</a></td>');
               //res.write('<td>' + d.song.genre + '</td>');
