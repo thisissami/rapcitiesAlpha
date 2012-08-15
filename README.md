@@ -1,6 +1,6 @@
 #RapCities Overview
 
-The site RapCities runs using several distinct technologies that mesh beautifully well together. This overview give a brief introduction to how the code itself is organized. Following the introduction, you will find sections of this document dedicated to each of the different aspects of the site. Each section will have its own introduction, followed by details that should help you get you acclimated to the code and be able to navigate your way around the logic of the site. 
+The site RapCities runs using several distinct technologies that mesh beautifully well together. This overview gives a brief introduction to how the code itself is organized. Following the introduction, you will find sections of this document dedicated to each of the different aspects of the site. Each section will have its own introduction, followed by details that should help you get you acclimated to the code and be able to navigate your way around the logic of the site. 
 
 You should read through the entirety of this document to get a good sense of the flow of things.
 
