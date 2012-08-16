@@ -299,6 +299,8 @@ void keyPressed(){
 
 int minX, minY, maxX, maxY;
 int miniMidX,miniMidY,midX,midY;
+int midX_o = 0, midY_o = 0; //store original x & y;
+int midX_n = 0, midY_n = 0; //store x & y after mousepressed;
 class Map{
 	PImage miniNYC; //image in minimap
 	int ox, oy, ocx, ocy;//respectively mouseX/Y locations and midX/Y locations when mouse pressed (to move map around)
@@ -313,7 +315,18 @@ class Map{
 	}
 	
 	void draw(){
+                // Push and Pop Matrix for animation of maps
+                pushMatrix();
+                translate( midX_n - midX_o , midY_n - midY_o );
 		drawMap();
+                if (midX_n != midX_o) {
+                midX_n = midX_n + (midX_o - midX_n) / 10;
+                }
+                if (midY_n != midY_o) {
+                midY_n = midY_n + (midY_o - midY_n) / 10;
+                }
+                popMatrix();
+                // End of animation
 		drawLocations();
 		fill(0);
 		noStroke();
@@ -457,6 +470,9 @@ class Map{
 	}
 	//check if mouse is pressed within minimap
 	void miniMousePressed(){
+		midX_o = midX;
+                midY_o = midY;
+                // record the x & y before mouse pressed
 		if(mouseX>PANEMINX && mouseY>PANEMAXY && mouseX<PANEMAXX && mouseY<MINIMAXY){
 			miniPressed = true;
 			miniMidX = min(max(miniRedX/2,mouseX - PANEMINX),284-miniRedX/2);
@@ -476,6 +492,9 @@ class Map{
 	void miniToMaxi(){
 		midX = map(miniMidX,0,284,0,xgrid);
 		midY = map(miniMidY,0,270,0,ygrid);
+	        midX_n = midX;
+                midY_n = midY;
+                // record the x & y after mouse pressed
 		setMins();
 	}
 	
