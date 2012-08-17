@@ -1,6 +1,6 @@
 #RapCities Overview
 
-The site RapCities runs using several distinct technologies that mesh beautifully well together. This overview give a brief introduction to how the code itself is organized. Following the introduction, you will find sections of this document dedicated to each of the different aspects of the site. Each section will have its own introduction, followed by details that should help you get you acclimated to the code and be able to navigate your way around the logic of the site. 
+The site RapCities runs using several distinct technologies that mesh beautifully well together. This overview gives a brief introduction to how the code itself is organized. Following the introduction, you will find sections of this document dedicated to each of the different aspects of the site. Each section will have its own introduction, followed by details that should help you get you acclimated to the code and be able to navigate your way around the logic of the site. 
 
 You should read through the entirety of this document to get a good sense of the flow of things.
 
@@ -46,12 +46,33 @@ locations - ArrayList that contains all the locations within the app
 icons - HashMap that contains all the icons for all the different location types
 colors - JS object that acts like a HashMap that contains all the colors for the different location types (used for text and dots in the minimap)
 
-RELATING TO POSITIONS/COORDINATES/RESOLUTIONS:
+##The Different Coordinate Systems
+
+There are 3 distinct coordinate systems that are used in rapcitiesAlpha.pde:
+
+1) The first is the coordinate system that processing uses. This is 0-WIDTH and 0-HEIGHT. Everything needs to be converted to this coordinate system to be drawn properly in the canvas.
+
+2) The second is the coordinate system that the locations use. They have their own scale that is unchanging.
+
+3) The last coordinate system is the pixel coordinate system used by the map. When locations are drawn, they first get their "location position" converted to the pixel coordinate system equivalent. If their location within the pixel coordinate system is within the currently drawn portion of the map, then those coordinates are then converted to the processing coordinate system, at which point they are drawn. The location and pixel coordinates are separate so that the scale of the map can always change in the future. 
+
+Some variables related to positioning:
+
+In coordinate system 1 (processing):
 
 WIDTH/HEIGHT - total width/height of the working resolution - these have lower limits that they never get below, as decided in the setUpSize() function.
+
+In coordinate system 2 (locations):
+
+minX, maxX, minY, maxY - these are coordinates that set the bounds of the currently visible area within this scale. If a location value does not fall within these values in its natural coordinate system, it will not get drawn.
+
+In coordinate system 3 (pixels):
+
 xgrid/ygrid - the total width/height of the map in pixels (significantly larger than the pixel space drawn on the canvas).
+
 midX/midY - the point within the xgrid/ygrid coordinate system that should be displayed in the center of the canvas (AKA where in the pixel grid we are currently centered)
-miniMidX/miniMidY - same as above, except this corresponds to where the red rectangle is drawn in the miniMap
+
+miniMidX/miniMidY - same as above, except this corresponds to where the red rectangle is drawn in the miniMap (technically not in this system, but applicable)
 
 #Content Management System
 
@@ -182,13 +203,13 @@ Before you start working on a feature, you should first create a branch specific
 
 In order to create a new branch, you run the command
 
-	git branch <name>
+	git branch <name_of_branch>
 	
 where name is descriptive of your feature. If you were working, for example, on a live streaming rap battle feature, you might use the name "liveRapBattle" or "liveStreaming" or something of that sort.
 
 However, in addition to creating a branch, you'll actually need to switch from the master branch (that you're currently in) into the one you just created. To do so, you'll need to run:
 
-	git checkout <name>
+	git checkout <name_of_branch>
 
 You can always check what branch you're in by running
 
@@ -196,15 +217,23 @@ You can always check what branch you're in by running
 
 without a name parameter - the starred branch is the one you're currently in.
 
-If the branch that you're working on is a substantial feature that is either going to take a lot of development time OR will have more than one person working on it, then push this branch to the github repository. You do this by running
+Once you have made some changes to a file you're working on, add that to the git branch you're working on by using:
 
-	git push origin <name> 
+	git add <path-to-file>
 	
-'origin' is the default name for our github repository remote. This is set automatically in the clone command you ran earlier. <name> or course needs to match the local branch name. 
+Then, commit the changes using:
+
+	git commit -m "message about this commit"
+
+Once you have committed the changes that you've added to git, you can push them to your branch on github using
+
+	git push origin <name_of_branch> 
+	
+'origin' is the default name for our github repository remote. This is set automatically in the clone command you ran earlier. "name-of-branch" of course needs to match the local branch name. 
 	
 If you are trying to gain access to a remote branch (as in a branch hosted on GitHub) that somebody else has created previously, you need just run the command
 
-	git checkout <name> 
+	git checkout <name_of_branch> 
 
 You can use
 
@@ -216,6 +245,6 @@ Once you're done, you'll need to merge the code back into master. To do this, yo
 
 	git checkout master
 	git pull origin master
-	git merge <name>
+	git merge <name_of_branch>
 	
 More info: http://learn.github.com/p/branching.html

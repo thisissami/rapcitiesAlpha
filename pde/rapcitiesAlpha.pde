@@ -2,7 +2,6 @@
 
 //the above code is used by processingjs to preload images
 
-boolean started; //is there something playing?
 PFont font;
 HashMap longText; //used for long text
 Current current; //used to display current song info and controls
@@ -40,7 +39,6 @@ void setup(){
 	smooth();
 	rectMode(CORNERS);
 	ellipseMode(CENTER_RADIUS);
-	started = false; //nothing is playing yet!
 	font = createFont("Arial", 13);
 	textFont(font);
 	colorMode(RGB);
@@ -136,6 +134,67 @@ void draw(){
   if(curloc > -1)
 		nyc.drawHoverInfo(curloc);
 }
+
+var curVid = -1; //currently hovered over video in a list of videos in sidePane
+var curloc = -1; //currently hovered over loc in the map
+
+//function that runs when mouse is clicked (as in released immediately after being pressed)
+void mouseClicked(){
+	if(curloc >= 0){
+		location = locations.get(curloc);
+		playingVideo = 0;
+		sidePane.resetSize(); 
+		sidePane.resetPage();
+		loadVideo();
+	}
+	else if(curVid >= 0){
+		playingVideo = curVid;
+		loadVideo();
+	}
+	else if(toolHover >= 0){
+		toolBox.mouseClicked();
+	}
+	else if(forwardPageHover){
+		sidePane.nextPage();
+	}
+	else if(backPageHover){
+		sidePane.previousPage();
+	}
+}	
+
+//function that's called when mouse is pressed (regardless of whether or not it's let go)
+void mousePressed(){
+  if(mouseY < curBottom && mouseY > curTop && mouseX < curRight && mouseX > curLeft){
+    current.mousePressed();
+  }
+  else if(mouseX > PANEMINX && mouseX < PANEMAXX && mouseY > PANEMINY && mouseY < MINIMAXY){
+	if(mouseY < PANEMAXY)
+    	sidePane.mousePressed();
+ 	else
+		nyc.miniMousePressed();
+  }
+  else
+	nyc.mousePressed();
+}
+
+//function called when mouse is moved while button is clicked
+void mouseDragged(){
+  current.mouseDragged();
+  nyc.mouseDragged();
+  nyc.miniMouseDragged();
+}
+//function that's called when mouse leaves scope of canvas
+void mouseOut(){
+	nyc.mouseOut();
+	current.mouseReleased();
+}
+//function that's called when a pressed mouse button is released
+void mouseReleased(){
+  current.mouseReleased();
+  nyc.mouseReleased();
+  nyc.miniMouseReleased();
+}
+
 
 var location; //current location
 var icons = new HashMap(); //icon images that correspond to the various types
@@ -244,7 +303,7 @@ class Toolbox{
 	void mouseClicked(){
 		switch(toolHover){
 			case(HEART):break;
-			console.log('heart');
+			/*console.log('heart');
 				if(location.list[playingVideo].fav){
 					$.get('http://localhost:8888/removeSong', { "songid": artist.RID+" "+artist.topTracks[playingSong].RID});
 					location.list[playingVideo].fav = false;
@@ -252,7 +311,7 @@ class Toolbox{
 				else{
 					$.get('http://localhost:8888/addSong', { "songid": artist.RID+" "+artist.topTracks[playingSong].RID});
 					location.list[playingVideo].fav = true;
-				}
+				}*/
 				break;
 			case(BASKET):break;
 				showFavorites();
@@ -297,7 +356,8 @@ void keyPressed(){
 	else artmode = false;
 }
 
-int minX, minY, maxX, maxY;
+int minX, minY, maxX, maxY; //these are variables that set the boundaries for the currently visible scope
+//in the scale used by the 
 int miniMidX,miniMidY,midX,midY;
 class Map{
 	PImage miniNYC; //image in minimap
@@ -311,7 +371,7 @@ class Map{
 		ox = oy = -1;
 		prep();
 	}
-	
+	  
 	void draw(){
 		drawMap();
 		drawLocations();
@@ -592,92 +652,19 @@ class Map{
 	}
 }
 
-var curVid = -1; var curloc = -1;
-
-
-void mouseClicked(){
-  if(curloc >= 0){
-	location = locations.get(curloc);
-	playingVideo = 0;
-	sidePane.resetSize(); 
-	sidePane.resetPage();
-	loadVideo();
-  }
-	else if(curVid >= 0){
-		playingVideo = curVid;
-		loadVideo();
-	}
-	else if(toolHover >= 0){
-		toolBox.mouseClicked();
-	}
-	else if(forwardPageHover){
-		sidePane.nextPage();
-	}
-	else if(backPageHover){
-		sidePane.previousPage();
-	}
-}	
-
-
-void mousePressed(){
-  if(mouseY < curBottom && mouseY > curTop && mouseX < curRight && mouseX > curLeft){
-    current.mousePressed();
-  }
-  else if(mouseX > PANEMINX && mouseX < PANEMAXX && mouseY > PANEMINY && mouseY < MINIMAXY){
-	if(mouseY < PANEMAXY)
-    	sidePane.mousePressed();
- 	else
-		nyc.miniMousePressed();
-  }
-  else
-	nyc.mousePressed();
-}
-
-
-void mouseDragged(){
-  current.mouseDragged();
-  nyc.mouseDragged();
-  nyc.miniMouseDragged();
-}
-void mouseOut(){
-	nyc.mouseOut();
-	current.mouseReleased();
-}
-
-void mouseReleased(){
-  current.mouseReleased();
-  nyc.mouseReleased();
-  nyc.miniMouseReleased();
-}
-
-int hoverSong = -1;
-  
-void resetSongs(){
-  for(int i = songs.size()-1; i > -1; i--){
-    if(i==curSong&&started)
-      songs.get(i).stopSong();
-    songs.remove(i);
-  }
-  curSong = -1;
-  song = null;
-}
-
-
-
+//abstract class for a general button object
 abstract class Button{
   int x, y, hw, hh;//x and y coordinates, followed by half the WIDTH and HEIGHT
   boolean invert;
   boolean pressedHere; // boolean to check whether button was pressed originally vs a different one
-  Button(int x, int y, int hw, int hh)
-  {
+  Button(int x, int y, int hw, int hh) {
     this.x = x;
     this.y = y;
     this.hw = hw;
     this.hh = hh;
   }
   
-  boolean pressed()
-  {
+  boolean pressed() {
     return mouseX > x - hw && mouseX < x + hw && mouseY > y - hh && mouseY < y + hh;
   }
   
@@ -689,25 +676,22 @@ abstract class Button{
   abstract void mouseReleased();
   abstract void draw();
 }
-
+//play button
 class Play extends Button{
   boolean play;
     
-  Play(int x, int y, int hw, int hh) 
-  { 
+  Play(int x, int y, int hw, int hh)   { 
     super(x, y, hw, hh); 
     play = true;
   }
   
 
-  boolean paused()
-  {
+  boolean paused()  {
     return play;
   }
   
   // code to handle playing and pausing the file
-  void mousePressed()
-  {
+  void mousePressed()  {
     if (super.pressed()){
       invert = true;
       pressedHere = true;
@@ -721,10 +705,9 @@ class Play extends Button{
       invert = false;
   }
   
-  void mouseReleased()
-  {
+  void mouseReleased()  {
     if(invert && pressedHere){
-      if(started && playMode == AUDIO)
+      if(playMode == AUDIO && started)
         song.togglePause();
 	  else if(playMode == VIDEO){
 		if(player.getPlayerState()==2)
@@ -738,8 +721,7 @@ class Play extends Button{
   }
   
   // play is a boolean value used to determine what to draw on the button
-  void update()
-  {
+  void update()  {
     if(playMode == AUDIO && started){
       if (song != null && song.playState==1){
         if(song.paused){
@@ -762,8 +744,7 @@ class Play extends Button{
       }
   }
   
-  void draw()
-  {
+  void draw()  {
     if ( invert ){
       fill(255);
       noStroke();
@@ -776,22 +757,18 @@ class Play extends Button{
         noStroke();
     }
     rect(x - hw, y - hh, x+hw, y+hh);
-    if ( invert )
-    {
+    if ( invert )    {
       fill(0);
       noStroke();
     }
-    else
-    {
+    else    {
       fill(255);
       noStroke();
     }
-    if ( play )
-    {
+    if ( play )    {
       triangle(x - hw/2, y - hh/2, x - hw/2, y + hh/2, x + hw/2, y);
     }
-    else
-    {
+    else    {
       rect(x - hw/2, y - hh/2, x-1, y + hh/2);
       rect(x + hw/2, y - hh/2, x +1, y + hh/2);
     }
@@ -864,31 +841,34 @@ class Forward extends Button{
   }  
 }
 
-//create the next song
+//iterate onto the next video in the list. this should be used if we ever create a "next song" button
 void createNext(){
   stopVideo();
-  if(playingVideo < location.list.length-1){
+  if(playingVideo < location.list.length-1){//if there are more videos left in the list, play them
   	playingVideo++;
 	loadVideo();
-	//getSong(artist.topTracks[playingVideo].id);
   }
-  else
+  else//otherwise go to the next location
 	nextLocation();
 }
 
 ArrayList recentlyPlayed;
 
+//go to another location in the map
 void nextLocation(){
 	boolean alreadyPlayed = false;
+	//check if the current location is set as already played 
 	for(int i = 0; i < recentlyPlayed.size(); i++){
 		if(recentlyPlayed.get(i) == location._id){
 			alreadyPlayed = true;
 			break;
 		}
 	}
+	//if not, set it as already played
 	if(!alreadyPlayed){
 		recentlyPlayed.add(location._id);
 	}
+	//find a location that hasn't been played already and is in the current viewscope of the map
 	for(int i = 0; i < locations.size(); i++){
 		var cur = locations.get(i);
 		if(cur.x > minX && cur.x < maxX && cur.y > minY && cur.y < maxY && !recentlyPlayed.contains(cur._id)){
@@ -906,6 +886,12 @@ function textPair(length,index){
   this.index = index;
 }
 
+/*This function checks to see if the text that is being printed is longer than the
+allocated space available for the text. (the fourth paramater, max, is the max length).
+If the text length is longer than max, then checkText will have a horizontal scrolling
+text in the place of a regular text print. This way, all the writing is visible without 
+going past the allocated space.
+*/
 void checkText(String string, int x, int y,int max,color col, int ybelow){
   if(textWidth(string)>max){
     var cur = longText.get(string + textWidth(string));
@@ -961,18 +947,14 @@ final int SETTINGS = 1;
 boolean forwardPageHover, backPageHover;
 int curGenre = 0;
 int PANEMINY, PANEMINX, PANEMAXY, PANEMAXX, controlLength, INFOMINY;
+/*this is the class that deals with all the info displayed on the sidePane*/
 class SidePane{  
   int panel = BASICINFO;
   int margin = 10;
   int slant = 2;
   int num;
-  int mouseMainPaneControl = -1;
-  int mouseSort = -1;
-  int mouseFilter = 0;
-  int genreFilter = 0;
-  boolean mouseOnTitle = 0;
-  int mouseGenre = -1;
-  var colorIcon, sortIcon;
+  //int mouseMainPaneControl = -1;
+  //var colorIcon, sortIcon;
   
   String[] names = {" Current Info"," Color Mode","Sorting"};
   color currentColor;
@@ -984,6 +966,7 @@ class SidePane{
     INFOMINY = PANEMINY;//+controlLength;
 	PANEMAXX = WIDTH-SPLdistanceX;
 	backPageHover = forwardPageHover = false;
+	//this function adjusts the numbers of videos visible in a list at any given moment, depending on the screen resolution
 	if(HEIGHT < 870){
 		int x = 870;
 		int i = 0;
@@ -1001,20 +984,17 @@ class SidePane{
     textSize(16);
   }
   
+void mousePressed(){} void mouseClicked(){}
   void draw(){
     drawControl();
-	if(!location){printNoSong();}else{printLocation();}		
-  }
-
- 
-	
-			
-  void mousePressed(){
-
+	if(!location){printNoSong();}else{printLocation();}	//if no locations are selected, print default text
+	//otherwise show the location's info
   }
   
-  void mouseReleased(){}
-  
+  /*draw the boundary around the sidePane.
+
+note - there is also code here that deals with having a tabbed menu system, but this is currently 
+not in use. if it gets used in the future, the code is already here in commented format.*/
   void drawControl(){
 	fill(0);
 	//noStroke();
@@ -1082,6 +1062,11 @@ class SidePane{
 			case 4: text("Tweet About Song",x,y); break;
 		}
 	}*/
+
+	int pageToShow = 0; // what page (of the list of videos) should we show?
+	int totalPagesToShow = 1; // what are the total number of pages possible?
+	
+	//make sure that we aren't trying to display a page that doesn't exist
 	void resetSize(){
 		if(location && location.list){
 			while(pageToShow*vidsToShow >= location.list.length){
@@ -1090,8 +1075,7 @@ class SidePane{
 			totalPagesToShow = ceil(location.list.length/vidsToShow);
 		}
 	}
-	
-	int pageToShow = 0; int totalPagesToShow = 1;
+	//set page to 0 - called when a new location is started
 	void resetPage(){
 		pageToShow = 0;
 	}
@@ -1102,37 +1086,43 @@ class SidePane{
 		pageToShow--;
 	}
 
+	//print location information
 	void printLocation(){
 		textAlign(LEFT,TOP);
 		textSize(22);
 		fill(colors[location.type]);
-		checkText(location.title,PANEMINX+10,INFOMINY+10, 200, 0,22);
+		checkText(location.title,PANEMINX+10,INFOMINY+10, 200, 0,22); //print the title
 		fill(255);
 		textSize(16);
 		curVid = -1;
 		if(location.list){
-			int tot = min(vidsToShow,location.list.length-pageToShow*vidsToShow);
-			int base = pageToShow*vidsToShow;
+			int tot = min(vidsToShow,location.list.length-pageToShow*vidsToShow); //total number of videos to display in current page
+			int base = pageToShow*vidsToShow; // first vid to display's position in list
+			//print each of the songs
 			for(int i = base; i < base+tot; i++){
 				if(i == playingVideo){
+					//color it if it's currently playing
 					fill(colors[location.type]);
 					checkText(location.list[i].title, PANEMINX+20, INFOMINY + 35 + (i-base)*22,248,colors[location.type],30);
 					fill(255);
 				}
 				else if(mouseX>PANEMINX+20 && mouseY < INFOMINY+35+(i-base+1)*22&& mouseY>INFOMINY+35+(i-base)*22){
+					//if it's currently hovered over, color it and make it clickable (setting curVid to the number)
 					fill(colors[location.type]);
 					checkText(location.list[i].title, PANEMINX+20, INFOMINY + 35 + (i-base)*22,248,colors[location.type],30);
 					curVid = i;
 					fill(255);
 				}
-				else
+				else//otherwise just print it without anything fancy
 					checkText(location.list[i].title, PANEMINX+20, INFOMINY + 35 + (i-base)*22,248,color(255),30);
 			}
 			
-			//show pages if there's enough songs for that.
+			//show page navigation control if there are more vids in the list than a page allows for
 			if(vidsToShow < location.list.length){
 				textSize(14);
+				//display of page number
 				text(pageToShow+1+"/"+totalPagesToShow, PANEMAXX - 46, INFOMINY+30+vidsToShow*22);
+				//control for going back a page (if we're not in the first page)
 				if(pageToShow > 0 && mouseX > PANEMAXX-64 && mouseX < PANEMAXX-46 && mouseY < INFOMINY+43+vidsToShow*22 && mouseY > INFOMINY+35+vidsToShow*22){
 					fill(color(255,182,0));
 					text('<',PANEMAXX-58,INFOMINY+30+vidsToShow*22);
@@ -1145,6 +1135,7 @@ class SidePane{
 					text('<',PANEMAXX-58,INFOMINY+30+vidsToShow*22);
 					text('<',PANEMAXX-64,INFOMINY+30+vidsToShow*22);
 				}
+				//control for going forward a page (if we're not in the last page)
 				if(pageToShow < location.list.length/vidsToShow-1 && mouseX > PANEMAXX-23 && mouseX < PANEMAXX-7 && mouseY < INFOMINY+43+vidsToShow*22 && mouseY > INFOMINY+35+vidsToShow*22){
 					fill(color(255,182,0));
 					text('>',PANEMAXX-22,INFOMINY+30+vidsToShow*22);
@@ -1163,7 +1154,7 @@ class SidePane{
 			text(location.info,PANEMINX+20, INFOMINY+35,248,PANEMAXX-PANEMINX+20);
 		}
 	}
-  //Basic Song Information
+  //Basic Information if nothing is playing
   void printNoSong(){
 		textAlign(LEFT);
 	fill(255);
@@ -1174,16 +1165,13 @@ class SidePane{
   }
 }
 
-int curSong = -1;
-int playingSong = -1;
-
 boolean changingPosition = false; // used to alter where the drawing happens
 int volume = 50;
 boolean muted = false;
 int timeDisplacement, seekLeft, volX;
 int curRight, curLeft, curTop, curBottom, yloc;
   
-//class used to control the current song. also displays current song info
+//class used to control the currently playing video/volume.
 class Current{
   Play play; //play button
         //Rewind rewind; //rewind button
@@ -1226,17 +1214,9 @@ class Current{
   }
    
   boolean pressedInSeekBar = false;
-  /* FUUUUUUCK WASTE OF MY TIME! 
-  void mouseClicked(){
-    //play.mouseClicked();
-    //ffwd.mouseClicked();
-    seekBarClicked();
-    volClicked();
-  }
-  */
+
   void mousePressed(){
     play.mousePressed();
-            //rewind.mousePressed();
     ffwd.mousePressed();
     checkSeekBar();
     checkVol();
@@ -1244,7 +1224,6 @@ class Current{
   
   void mouseDragged(){
     play.mouseDragged();
-              //rewind.mouseDragged();
     ffwd.mouseDragged();
     dragSeekBar();
     dragVol();
@@ -1253,17 +1232,18 @@ class Current{
   void mouseReleased()
   {
     play.mouseReleased();
-              //rewind.mouseReleased();
     ffwd.mouseReleased();
     releaseSeekBar();
     releaseVol();
   }
   
+// is mouse over regular volume icon?
   boolean onVolume(){
     if(mouseX > volX-10 && mouseX < volX+2 && mouseY > yloc-6 && mouseY < yloc+6)
       return true;
     return false;
   }
+// is mouse over regular volume icon or the control that appears after mouse first hovers over volume icon?
   boolean onVolumeSetter(){
     if(mouseX > volX-volS-10 && mouseX < volX+20 && mouseY > yloc-volY && mouseY < yloc+volY)
       return true;
@@ -1274,6 +1254,7 @@ class Current{
   boolean onVolGen = false;
   boolean volDragged = false;
   
+//draw everything related to the volume control icon, and prep the variables used for the volume setter
   void drawVolume(){
     if(onVolume()){
       onVol = true;
@@ -1290,6 +1271,7 @@ class Current{
     strokeWeight(2);
     noFill();
 	ellipseMode(RADIUS);
+	//if not mute, draw appropriate number of semicircles
     if(!muted){
       if(volume > 80)
         arc(volX+6, yloc, 12, 12, -(PI/3), PI/3);
@@ -1322,7 +1304,7 @@ class Current{
   			player.setVolume(volume);			
     }
   }
-
+//if it's being dragged, adjust accordingly
   void dragVol(){
     if(volDragged){
       if(mouseY > yloc+volY)
@@ -1343,14 +1325,15 @@ class Current{
       volDragged = false; 
     }    
   }
-  
+  //draw the volume setting bar
   void drawVolumeSetter(){
     stroke(255);
     strokeWeight(2);
     fill(0);
     rect(volX-volS-5, yloc-volY, volX-volS+5, yloc+volY);
     if(volume > 0){
-      fill(color(255,182,0));
+	  if(location) fill(colors[location.type]);
+      else fill(color(255,182,0));
       noStroke();
       rect(volX-volS-4, yloc+volY-1, volX-volS+4, yloc+volY+1 - volume*volD);
     }
@@ -1389,24 +1372,7 @@ class Current{
       }
     }
   }
-  /* fuuuuuuuuuuuuuuuuuuuck waaaaste of tiiiime!
-  void seekBarClicked(){
-    if(started){
-      //if it is within the seekbar range
-      if(mouseX>385 && mouseX<385+512 && mouseY>40 && mouseY<60){
-        if(songs.get(curSong).song.readyState == 1)
-          total = songs.get(curSong).song.durationEstimate;
-        //if song is fully loaded
-        else if(songs.get(curSong).song.readyState == 3)
-          total = songs.get(curSong).song.duration;
-        int seekPosition = (int)map(mouseX-385, 0, WIDTH/2, 0, total);
-        /*if(!songPausedToBeginWith)
-        songs.get(curSong).song.resume();  till here
-        songs.get(curSong).song.setPosition(seekPosition);
-      }
-    }
-  }
-  */
+
   //checks to see if user let go of the mouse will in seekbar land
   void releaseSeekBar(){
     //if song is loaded
@@ -1544,6 +1510,7 @@ class Current{
   }
 }
 
+//used to convert millisecond time in ints into a minutes:second string
 String makeTime(float time){ 
   int secs = (int) (time % 60);
   String minutes = (int) ((time % 3600) / 60);
@@ -1558,16 +1525,16 @@ String makeTime(float time){
   return (minutes + ":" + seconds);
 }  
 
-
+//called when a video ends - creates next video
 void videoEnded(){
 	if(location.list && playingVideo < location.list.length-1){
 	  	playingVideo++;
 		loadVideo();
-  }
-  else
-	nextLocation();
+	} else
+		nextLocation();
 }
 
+//show the youtube player
 void togglePlayer(){
 	$("#ytplayer").html('<script type="text/javascript">var params = { allowScriptAccess: "always" };var atts = { id: "YouTubeP" };swfobject.embedSWF("http://www.youtube.com/apiplayer?enablejsapi=1&version=3", "ytplayer", "283", "200", "8", null, null, params, atts);</script>');
 }
@@ -1577,6 +1544,7 @@ boolean playMode;
 int AUDIO = 1;
 int VIDEO = 2;
 
+//prep the player
 void prepPlayer(){
 	player = document.getElementById('YouTubeP');
 	playMode = VIDEO;
@@ -1620,10 +1588,11 @@ void startMusic(){
   }
 }*/
 
+//load new video using global parameters
 void loadVideo(){
    	if(location.list && location.list.length > 0){
 	    player.loadVideoById(location.list[playingVideo].ytid);
-		$.ajax({
+		$.ajax({//increase the viewcount on the server
 			url: "http://localhost:8888/loc/view",
 			data: {_id:location._id,position:playingVideo,city:'NYC'}
 		});
@@ -1631,7 +1600,7 @@ void loadVideo(){
 	  }
 	else if(location.ytid){
 		player.loadVideoById(location.ytid);
-		$.ajax({
+		$.ajax({//increase the viewcount on the server
 			url: "http://localhost:8888/loc/view",
 			data: {_id:location._id,city:'NYC'}
 		});
@@ -1646,6 +1615,7 @@ void loadVideo(){
 	});*/
 }
 
+//play a video using id (and if included/appropriate) position in list provided
 void playVideo(newlocation, newsub){
 	var newloc;
 	if(newlocation == location._id)
@@ -1677,6 +1647,7 @@ void playVideo(newlocation, newsub){
   }
 }
 
+//prep the bio of the current artist -- not currently in use.
 void prepareBio(){
     $.getJSON('http://localhost:8888/getBio?id='+artist.RID, function(results){      
       if(results != null){
