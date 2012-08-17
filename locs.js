@@ -199,7 +199,7 @@ function editLoc(req,res){
 								}
 								var j; var curid = curlist.RID; var found = false;
 								for(j = 0; j < doc.listnum; j++){
-									if(curid == doc.list[j].RID){
+									if(doc.list[j] && curid == doc.list[j].RID){
 										curlist['viewcount'] = doc.list[j].viewcount;
 										found = true;
 										break;
