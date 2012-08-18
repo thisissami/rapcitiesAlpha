@@ -301,8 +301,6 @@ int minX, minY, maxX, maxY;
 int miniMidX,miniMidY,midX,midY;
 int midX_o, midY_o; //store original x & y;
 int midX_n, midY_n;
-int locX_o, locY_o;
-int locX_n, locY_n;
 class Map{
 	boolean currentlyAnimating = false;
 	int f_counter = 0;
