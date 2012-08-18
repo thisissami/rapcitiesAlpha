@@ -205,7 +205,7 @@ In order to create a new branch, you run the command
 
 	git branch <name_of_branch>
 	
-where name is descriptive of your feature. If you were working, for example, on a live streaming rap battle feature, you might use the name "liveRapBattle" or "liveStreaming" or something of that sort.
+where "name-of-branch" is descriptive of your feature. If you were working, for example, on a live streaming rap battle feature, you might use the name "liveRapBattle" or "liveStreaming" or something of that sort.
 
 However, in addition to creating a branch, you'll actually need to switch from the master branch (that you're currently in) into the one you just created. To do so, you'll need to run:
 

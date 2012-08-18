@@ -156,11 +156,18 @@ function editTypeColor(req, res){
 	});
 }
 
+//turns newlines into <br /> tags. if there's a > char right before a newline, it ignores it.
+function nl2br (str, is_xhtml) {   
+	var breakTag = (is_xhtml || typeof is_xhtml === 'undefined') ? '<br />' : '<br>';    
+	return (str + '').replace(/[^>]([^>\r\n]?)(\r\n|\n\r|\r|\n)/g, '$1'+ breakTag +'$2');
+}
+
 function newLoc(req, res){
 	var newloc = req.body;
 	newloc['_id'] = shortID.generate();
 	if(newloc['list']){ newloc['list'] = new Array(); newloc['listnum'] = 0;}
 	else newloc['viewcount'] = 0;
+	if(newloc['bio']){ newloc['bio'] = nl2br(newloc['bio'],true);}
 	newloc.visible = false;
 //	var newnewloc = JSON.parse(JSON.stringify(newloc));
 //	console.log(newnewloc);
@@ -183,6 +190,9 @@ function editLoc(req,res){
 				if(doc.x){loc.x = doc.x; loc.y = doc.y;}
 				if(loc.visible == "visible") loc.visible = true;
 				else loc.visible = false;
+				if(loc.bio){
+					loc.bio = nl2br(loc.bio,true);
+				}
 				if(loc.list){
 					if(loc.listnum){
 						var i; var list = new Array();

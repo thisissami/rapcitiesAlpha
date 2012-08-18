@@ -124,24 +124,26 @@ PImage facebook,heartBasket,logout,wikibio;
 
 //draw all the various things that get displayed in the app
 void draw(){
-  nyc.draw();
-  imageMode(CORNER);
-  image(logo,0,0);//,logo.width,logo.height);
-  //draws the current song controller
-  sidePane.draw();
-	if(location && location.list && location.list.length)  toolBox.draw();
+	nyc.draw();
+	imageMode(CORNER);
+	image(logo,0,0);//,logo.width,logo.height);
+	if(curLoc > -1)//draw currently playing location
+		nyc.drawCurrentInfo();
+	sidePane.draw();// draw the sidepane!
+	if(location && location.list && location.list.length)  
+		toolBox.draw();
 	current.draw();
-  if(curloc > -1)
-		nyc.drawHoverInfo(curloc);
+	if(hoverLoc > -1)
+		nyc.drawHoverInfo();	
 }
 
 var curVid = -1; //currently hovered over video in a list of videos in sidePane
-var curloc = -1; //currently hovered over loc in the map
+var hoverLoc = -1; //currently hovered over loc in the map
 
 //function that runs when mouse is clicked (as in released immediately after being pressed)
 void mouseClicked(){
-	if(curloc >= 0){
-		location = locations.get(curloc);
+	if(hoverLoc >= 0){
+		location = locations.get(hoverLoc);
 		playingVideo = 0;
 		sidePane.resetSize(); 
 		sidePane.resetPage();
@@ -319,10 +321,9 @@ class Toolbox{
 			case(LOGOUT):
 				link('http://localhost:8888/logout');
 				break;
-			case(FACEREC):
-				break;
-			case(ARTBIO):break;
-				prepareBio();
+			case(FACEREC):	break;
+			case(ARTBIO):
+				showBio();
 				break;
 		}
 	}
@@ -557,43 +558,31 @@ class Map{
 	//draw locations within the map
 	void drawLocations(){
 		imageMode(CENTER);
-		curloc = -1;
+		hoverLoc = curLoc = -1;
 		for(int i = 0; i < locations.size(); i++){
 			var cur = locations.get(i);
 			//if the current location we're looking at is within the currently displayed map area
 			if(cur.x < maxX+10 && cur.x > minX-10 && cur.y < maxY+15 && cur.y > minY-15 && icons.get(cur.type).width > 0){
 				var x = map(cur.x,minX,maxX,0,WIDTH);
 				var y = map(cur.y,minY,maxY,0,HEIGHT);
-				// check if current location is the currently open one - if so draw it's info
+				var icon = icons.get(cur.type);
+				// check if current location is the currently open one
 				if(location && cur._id==location._id){
-					image(icons.get(cur.type),x,y);
-				    textSize(18);
-				    int xlength = textWidth(cur.title);
-				    stroke(colors[cur.type]);
-				    fill(0);
-					rectMode(CENTER);
-				    rect(x, y-40,xlength+12, 26,10);
-
-				      fill(colors[cur.type]);
-				     // fill(outlineColors[genres.get(songs.get(hoverSong).genre)]);
-				    textAlign(LEFT,TOP);
-				    text(cur.title, x-xlength/2, y-50);
+					curLoc = i;
 			    }
 				//check if mouse is hovering over location
-				else if(mouseX < x+15 && mouseX > x-15 && mouseY < y+15 && mouseY > y-15
+				else if(mouseX < x+icon.width/2 && mouseX > x-icon.width/2 && mouseY < y+icon.height/2 && mouseY > y-icon.height/2
 					&& (mouseX < PANEMINX || mouseX > PANEMAXX || mouseY < PANEMINY || mouseY > MINIMAXY)){
-					image(icons.get(cur.type),x,y);
-					curloc = i;
+					hoverLoc = i;
 				}
-				//otherwise draw location without anything fancy
-				else
-					image(icons.get(cur.type),x,y);
+				//draw location's icon
+				image(icon,x,y);
 			}
 		}
 	}
 	//draw info about location while mouse is there
-	void drawHoverInfo(int i){
-	    var loc = locations.get(i);
+	void drawHoverInfo(){
+	    var loc = locations.get(hoverLoc);
 	    textSize(18);
 	    int xlength = textWidth(loc.title);
 	    stroke(colors[loc.type]);
@@ -604,6 +593,21 @@ class Map{
 	      fill(colors[loc.type]);
 	    textAlign(LEFT,TOP);
 	    text(loc.title, mouseX+6, mouseY-30);
+	}
+	//draw info about currently playing location
+	draw drawCurrentInfo(){
+		var cur = locations.get(curLoc);
+		textSize(18);
+	    int xlength = textWidth(cur.title);
+	    stroke(colors[cur.type]);
+	    fill(0);
+		rectMode(CENTER);
+		int x = map(cur.x,minX,maxX,0,WIDTH);
+		int y = map(cur.y,minY,maxY,0,HEIGHT)-(icons.get(cur.type).height/2)-20;
+	    rect(x,y,xlength+12, 26,10);   
+		fill(colors[cur.type]);
+	    textAlign(LEFT,TOP);
+	    text(cur.title, x-xlength/2, y-10);
 	}
 	
 	// if mouse pressed in map
@@ -875,7 +879,7 @@ void nextLocation(){
 			location = cur;
 			playingVideo = 0;
 			loadVideo();
-			//prepareBio();			
+			//showBio();			
 		}
 	}
 }
@@ -892,37 +896,40 @@ If the text length is longer than max, then checkText will have a horizontal scr
 text in the place of a regular text print. This way, all the writing is visible without 
 going past the allocated space.
 */
-void checkText(String string, int x, int y,int max,color col, int ybelow){
+void checkText(String string, int x, int y,int max,color col, int ybelow,int extra1){
   if(textWidth(string)>max){
-    var cur = longText.get(string + textWidth(string));
-    if(cur == null){
-      cur = new textPair(0,0);
-      longText.put(string+textWidth(string),cur);
+	int extra = 0;
+	if(extra1)
+		extra = extra1;//extra is used to shorten the max length of the text (can fix draw issues with small fonts)
+    var cur = longText.get(string + textWidth(string));//long texts are saved in a hashmap
+    if(cur == null){ //if this longtext isn't already accounted for, place it in the hashmap
+      cur = new textPair(0,0);//a textpair has two variables, the current index that is being first displayed
+      longText.put(string+textWidth(string),cur);//and the length (pixels) that that index has scrolled
     }
     int i = cur.index;
-    int slength = string.length();
-    if(cur.length >= textWidth(string.charAt(i))){
-      if(i < slength-1){
+    int slength = string.length();//length of the entire string
+    if(cur.length >= textWidth(string.charAt(i))){//if current char has scrolled more than it's length
+      if(i < slength-1){//go to the next char
         cur.index++;
         i++;
         cur.length = 0;
       }
-      else{
+      else{// or if we've been through all of them, reset to the beginnning
         cur.index = i = 0;
         cur.length = -40;
       }
     }
-    int totalLength = textWidth(string.charAt(i))-cur.length;
+    int totalLength = textWidth(string.charAt(i))-cur.length; //the total length to be displayed begins with the amount of the car that is being displayed
     i++;
-    while(totalLength < max && i < slength){
-      totalLength += textWidth(string.charAt(i));
-      i++;
+    while(totalLength < max-extra && i < slength){//keep adding chars to the "to be displayed list"
+      totalLength += textWidth(string.charAt(i));//as long as we haven't reached the maximum allocated space
+      i++;//or gone through the whole string
     }
-    text(string.substring(cur.index,i),x-cur.length,y);
-    if(i == slength){
-      totalLength += 40;
-      int j = 0;
-      while(totalLength < max){
+    text(string.substring(cur.index,i),x-cur.length,y); //draw the text so far
+    if(i == slength){//if we've gone through the whole string
+      totalLength += 40;//then add a space
+      int j = 0;//and restart from the beginning of the string!
+      while(totalLength < max-extra){//adding chars until we reach the allocated space
         totalLength += textWidth(string.charAt(j));
         j++;
       }
@@ -931,9 +938,9 @@ void checkText(String string, int x, int y,int max,color col, int ybelow){
     noStroke();
     fill(0);
 	rectMode(CORNERS);
-    rect(x-textWidth('W'),y+ybelow,x,y);
-    rect(x+max,y,x+max+textWidth('W'),y+ybelow);
-    fill(col);
+    rect(x-textWidth('W'),y+ybelow,x,y);//draw black boxes at the beginning
+    rect(x+max,y,x+max+textWidth('W'),y+ybelow);//and end of the string
+    fill(col);//so that there appears to be a continuous scroll
     cur.length++;
     longText.put(string+textWidth(string),cur);
   }
@@ -1091,7 +1098,7 @@ not in use. if it gets used in the future, the code is already here in commented
 		textAlign(LEFT,TOP);
 		textSize(22);
 		fill(colors[location.type]);
-		checkText(location.title,PANEMINX+10,INFOMINY+10, 200, 0,22); //print the title
+		checkText(location.title,PANEMINX+21,INFOMINY+10, 240, 0,22,8); //print the title
 		fill(255);
 		textSize(16);
 		curVid = -1;
@@ -1103,18 +1110,18 @@ not in use. if it gets used in the future, the code is already here in commented
 				if(i == playingVideo){
 					//color it if it's currently playing
 					fill(colors[location.type]);
-					checkText(location.list[i].title, PANEMINX+20, INFOMINY + 35 + (i-base)*22,248,colors[location.type],30);
+					checkText(location.list[i].title, PANEMINX+30, INFOMINY + 35 + (i-base)*22,238,colors[location.type],30,13);
 					fill(255);
 				}
-				else if(mouseX>PANEMINX+20 && mouseY < INFOMINY+35+(i-base+1)*22&& mouseY>INFOMINY+35+(i-base)*22){
+				else if(mouseX>PANEMINX+28 && mouseY < INFOMINY+35+(i-base+1)*22&& mouseY>INFOMINY+35+(i-base)*22){
 					//if it's currently hovered over, color it and make it clickable (setting curVid to the number)
 					fill(colors[location.type]);
-					checkText(location.list[i].title, PANEMINX+20, INFOMINY + 35 + (i-base)*22,248,colors[location.type],30);
+					checkText(location.list[i].title, PANEMINX+30, INFOMINY + 35 + (i-base)*22,238,colors[location.type],30,13);
 					curVid = i;
 					fill(255);
 				}
 				else//otherwise just print it without anything fancy
-					checkText(location.list[i].title, PANEMINX+20, INFOMINY + 35 + (i-base)*22,248,color(255),30);
+					checkText(location.list[i].title, PANEMINX+30, INFOMINY + 35 + (i-base)*22,238,color(255),30,13);
 			}
 			
 			//show page navigation control if there are more vids in the list than a page allows for
@@ -1151,7 +1158,7 @@ not in use. if it gets used in the future, the code is already here in commented
 			}
 		}
 		else{
-			text(location.info,PANEMINX+20, INFOMINY+35,248,PANEMAXX-PANEMINX+20);
+			text(location.info,PANEMINX+30, INFOMINY+35,238,PANEMAXX-PANEMINX+20);
 		}
 	}
   //Basic Information if nothing is playing
@@ -1569,7 +1576,7 @@ void startMusic(){
 		      if(artist.topTracks[j].RID == songID){
 			playingSong = j;
 			loadVideo(); sidePane.resetSize();
-			//prepareBio();
+			//showBio();
 			midX = map(artist.x,531.749,531.749+853,0,xgrid);
 			midY = map(artist.y,231.083,231.083+810,0,ygrid);
 			miniMidX = map(midX,0,xgrid,0,284);
@@ -1581,7 +1588,7 @@ void startMusic(){
 		  } else{
 		    playingSong = 0;
 		    loadVideo(); sidePane.resetSize();
-			//prepareBio();
+			//showBio();
 		  }
 		break;
 	  }
@@ -1635,28 +1642,27 @@ void playVideo(newlocation, newsub){
 	for(int j = 0; j < location.list.length; j++){
 	  if(location.list[j].RID == newsub){
 	    playingVideo = j;
-	    loadVideo(); if(newloc){sidePane.resetSize();sidePane.resetPage();}//if(newloc)prepareBio();
+	    loadVideo(); if(newloc){sidePane.resetSize();sidePane.resetPage();}//if(newloc)showBio();
 	  }
 	}
       }
       else{
 	playingVideo = 0;
-	loadVideo(); if(newloc){sidePane.resetSize();sidePane.resetPage();}//if(newart)prepareBio();
+	loadVideo(); if(newloc){sidePane.resetSize();sidePane.resetPage();}//if(newart)showBio();
       }
     }
   }
 }
 
 //prep the bio of the current artist -- not currently in use.
-void prepareBio(){
-    $.getJSON('http://localhost:8888/getBio?id='+artist.RID, function(results){      
-      if(results != null){
-        $("div#biolog").html('<b>'+artist.name+'</b><br /><p>' + results.text + '<br /><br />Source: <a href="' + results.url + '">Wikipedia</a></p>');
-	  	$('div#biolog', window.parent.document).scrollTop(0);
-	  }
-	});
+void showBio(){
+    if(location.bio){   	
+		//$("div#biolog").html('<b>'+artist.name+'</b><br /><p>' + results.text + '<br /><br />Source: <a href="' + results.url + '">Wikipedia</a></p>');
+        $("div#biolog").html(location.bio);
+	  	//$('div#biolog', window.parent.document).scrollTop(0);
     
-	if( !$("div#biolog").dialog("isOpen") ) {
-		$("div#biolog").dialog("open");
-	  }
+		if( !$("div#biolog").dialog("isOpen") ) {
+			$("div#biolog").dialog("open");
+		}
+	}
 }

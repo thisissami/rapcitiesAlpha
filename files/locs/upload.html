@@ -67,7 +67,7 @@
 					}
 				}
 				if(!types[i].list){
-					$('#newlocform').append($('#media').html());
+					$('#newlocform').append($('#soloStuff').html());
 				}
 				$('#newlocform').append('<input type="submit" id="nl-sub">')
 				var options = {
@@ -311,11 +311,16 @@
 	}
 	
 	function editLoc(i){
+		var bioexists = false;
 		var datahtml = '<br /><a href="javascript:void(0)" onclick="closeLoc('+i+')">Close <b>'+locs[i].title+'</b></a><br /><br /> <form name="locupdate" id="locupdate'+i+'">';
 		for(var key in locs[i]){
 			if(key == 'list'){ datahtml+= '<span id="list'+i+'"><a href="javascript:void(0)" onclick="editList('+i+')"> Click to Edit List </a></span><input type="text" name="list" readonly="readonly" size="1" value="list"/><br />';
 			}
 			else if(key == 'listnum' || key == 'x' || key == 'y' || key == 'viewcount') continue;
+			else if(key == 'info' || key == 'bio'){
+				datahtml+= key+': <textarea name="'+key+'" id="'+key+i+'"cols="30" rows="4" id="nl-info">'+locs[i][key]+'</textarea><br/>';
+				if(key == 'bio') bioexists = true;
+			}
 			else{
 				datahtml += key+': <input name="'+key+'" id="'+key+i+'"';
 				switch(key){
@@ -335,6 +340,9 @@
 						break;
 				}
 			}
+		}
+		if(!bioexists){
+			datahtml+= 'bio: <textarea name="bio" id="bio'+i+'"cols="30" rows="4" id="nl-info"></textarea><br/>';
 		}
 		datahtml += '<input type="submit" value="Save"/></form>';
 		$('#loc'+i).html(datahtml);
@@ -432,7 +440,8 @@ ____________________________________________<br /><br />
 <div id="newlocformtop" style="display:none">
 	<form name="newicon" id="newlocform">
 		**Title (this shows up when hovering over icon): <input type="text" name="title" id="nl-title" size="20"/> <br />
-		*Information (brief blurb that details what this plot is. for single items, this is required and will show up in panel where list of songs usually are): <br /> <textarea name="info" cols="30" rows="4" id="nl-info"></textarea><br/>
+		Bio (shows up as pop-up when link clicked): <br /> <textarea name="bio" cols="30" rows="4" id="nl-bio"></textarea><br/>
+		
 		Street Credit (numbers only): <input type="text" name="streetcred" id="nl-sc" size="20"/> <br />
 		DNA (as few characters as possible): <input type="text" name="DNA" id="nl-dna" size="20"/> <br />
 		Points (leave this for dan - number between 0 and 1, in the form of 0.xyz, 0, or 1):
@@ -440,9 +449,11 @@ ____________________________________________<br /><br />
 	</form>	
 	<br />** = always required, * = sometimes required
 </div>
-<div id="media" style="display:none">
-	**Youtube ID (soon other forms of media will exist): <input type="text" name="ytid" id="nl-ytid" size="20"/><br />
+<div id="soloStuff" style="display:none">
+	**Youtube ID: <input type="text" name="ytid" id="nl-ytid" size="20"/><br />
+	**Information (brief blurb that details what this plot is. for single items, this is required and will show up in panel where list of songs usually are): <br /> <textarea name="info" cols="30" rows="4" id="nl-info"></textarea><br/>
 </div>
+
 <div id="search" style="display:none">
 	<form name="searchform" id="searchform">
 		City: <select name="city" id="cityselect"> </select>
