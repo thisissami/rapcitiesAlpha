@@ -301,10 +301,10 @@ int minX, minY, maxX, maxY;
 int miniMidX,miniMidY,midX,midY;
 int midX_o, midY_o; //store original x & y;
 int midX_n, midY_n; //store new x & y;
-int frames = 30;
+int frames = 30; 
 class Map{
 	boolean currentlyAnimating = false;
-	int f_counter = 0;
+	int f_counter = 0; //yan hong
 	PImage miniNYC; //image in minimap
 	int ox, oy, ocx, ocy;//respectively mouseX/Y locations and midX/Y locations when mouse pressed (to move map around)
 	var widths, heights;//array of lengths of pixels of each image in the grid
@@ -340,6 +340,7 @@ class Map{
 		setMins();
 		}
 	}	 	
+	//yan hong
 
 	void draw(){
                 createAnimation ();
@@ -517,7 +518,7 @@ class Map{
 		midX_n = midX;
                 midY_n = midY;
 		f_counter = 0;
-                // record the x & y after mouse pressed
+                //yan hong
 		setMins();
 	}
 	
