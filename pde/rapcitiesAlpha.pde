@@ -300,7 +300,8 @@ void keyPressed(){
 int minX, minY, maxX, maxY;
 int miniMidX,miniMidY,midX,midY;
 int midX_o, midY_o; //store original x & y;
-int midX_n, midY_n;
+int midX_n, midY_n; //store new x & y;
+int frames = 30;
 class Map{
 	boolean currentlyAnimating = false;
 	int f_counter = 0;
@@ -317,7 +318,7 @@ class Map{
 	}
 
 	void animation() {
-		if (( midX_o == midX ) || ( midY_o == midY )) {
+		if (( midX_o == midX ) && ( midY_o == midY )) {
 			
 			currentlyAnimating = false;
 		}
@@ -326,20 +327,22 @@ class Map{
 		}
 	}
 
-	void updateAnimation(int x1, int y1, int x2, int y2, frames) {
-		if (  f_counter < frames ) { 
-			f_counter++;
-			midX = lerp ( x1, x2, f_counter/frames);
-			midY = lerp ( y1, y2, f_counter/frames);
+	void createAnimation() {
+		animation();
+		if (currentlyAnimating == true) {
+			if (  f_counter < frames ) { 
+				f_counter++;
+				midX = lerp ( midX_o, midX_n, f_counter/frames);
+				midY = lerp ( midY_o, midY_n, f_counter/frames);
+			        miniMidX = map(midX,0,xgrid,0,284);
+			        miniMidY = map(midY,0,ygrid,0,270);
+			}
+		setMins();
 		}
 	}	 	
 
 	void draw(){
-		
-		animation();
-		if (currentlyAnimating == true) {
-                updateAnimation ( midX_o, midY_o, midX_n, midY_n, 30);
-		}
+                createAnimation ();
 		drawMap();
 		drawLocations();
 		fill(0);
@@ -1641,7 +1644,6 @@ void startMusic(){
 			playingSong = j;
 			loadVideo(); sidePane.resetSize();
 			//prepareBio();
-			midX_o = midX; midY_o = midY;
 			midX = map(artist.x,531.749,531.749+853,0,xgrid);
 			midY = map(artist.y,231.083,231.083+810,0,ygrid);
 			midX_n = midX; midY_n = midY;
