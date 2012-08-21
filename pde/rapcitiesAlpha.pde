@@ -360,7 +360,12 @@ void keyPressed(){
 int minX, minY, maxX, maxY; //these are variables that set the boundaries for the currently visible scope
 //in the scale used by the 
 int miniMidX,miniMidY,midX,midY;
+int midX_o, midY_o; //store original x & y;
+int midX_n, midY_n; //store new x & y;
+int frames = 30; 
 class Map{
+	boolean currentlyAnimating = false;
+	int f_counter = 0; //yan hong
 	PImage miniNYC; //image in minimap
 	int ox, oy, ocx, ocy;//respectively mouseX/Y locations and midX/Y locations when mouse pressed (to move map around)
 	var widths, heights;//array of lengths of pixels of each image in the grid
@@ -372,8 +377,34 @@ class Map{
 		ox = oy = -1;
 		prep();
 	}
-	  
+
+	void animation() {
+		if (( midX_o == midX ) && ( midY_o == midY )) {
+			
+			currentlyAnimating = false;
+		}
+		else {
+			currentlyAnimating = true;
+		}
+	}
+
+	void createAnimation() {
+		animation();
+		if (currentlyAnimating == true) {
+			if (  f_counter < frames ) { 
+				f_counter++;
+				midX = lerp ( midX_o, midX_n, f_counter/frames);
+				midY = lerp ( midY_o, midY_n, f_counter/frames);
+			        miniMidX = map(midX,0,xgrid,0,284);
+			        miniMidY = map(midY,0,ygrid,0,270);
+			}
+		setMins();
+		}
+	}	 	
+	//yan hong
+
 	void draw(){
+                createAnimation ();
 		drawMap();
 		drawLocations();
 		fill(0);
@@ -510,6 +541,10 @@ class Map{
 		miniRedY = map(ylength,0,ygrid,0,270);
 		midX = 2600; //starting location in the map
 		midY = 4100; //center of map in pixel scale
+		midX_o = midX;
+		midY_o = midY;
+		midX_n = midX;
+		midY_n = midY;
 		miniMidX = map(midX,0,xgrid,0,284);
 		miniMidY = map(midY,0,ygrid,0,270);
 		widths = new Array(1000,1000,1000,1000,1000,1000,1000,1000);
@@ -518,6 +553,8 @@ class Map{
 	}
 	//check if mouse is pressed within minimap
 	void miniMousePressed(){
+
+                // record the x & y before mouse pressed
 		if(mouseX>PANEMINX && mouseY>PANEMAXY && mouseX<PANEMAXX && mouseY<MINIMAXY){
 			miniPressed = true;
 			miniMidX = min(max(miniRedX/2,mouseX - PANEMINX),284-miniRedX/2);
@@ -535,8 +572,14 @@ class Map{
 	}
 	//convert the minimap location to regular map scale and set map to said position
 	void miniToMaxi(){
+		midX_o = midX;
+                midY_o = midY;
 		midX = map(miniMidX,0,284,0,xgrid);
 		midY = map(miniMidY,0,270,0,ygrid);
+		midX_n = midX;
+                midY_n = midY;
+		f_counter = 0;
+                //yan hong
 		setMins();
 	}
 	
@@ -1579,6 +1622,7 @@ void startMusic(){
 			//showBio();
 			midX = map(artist.x,531.749,531.749+853,0,xgrid);
 			midY = map(artist.y,231.083,231.083+810,0,ygrid);
+			midX_n = midX; midY_n = midY;
 			miniMidX = map(midX,0,xgrid,0,284);
 			miniMidY = map(midY,0,ygrid,0,270);
 			nyc.setMins();
