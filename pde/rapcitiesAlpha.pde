@@ -1599,45 +1599,48 @@ void prepPlayer(){
 	player = document.getElementById('YouTubeP');
 	playMode = VIDEO;
 	player.setVolume(volume);
-	//if(locations.size() > 0) startMusic();
+	if(locations.size() > 0) startMusic();
 }
-/*
+
 void startMusic(){
   var pathArray = window.location.pathname.split('/');
-  var artID, songID;
-  if(pathArray[1] == "song"){
-    artID = pathArray[2];
-    songID = pathArray[3];
+  var locID, vidID;
+  if(pathArray[2] == "l"){
+    locID = pathArray[3];
+    vidID = pathArray[4];
   }
-  else  artID = "ARLGIX31187B9AE9A0";
+  else  locID = "nL3IpxX2XB";
 
-    for(int i = 0; i < artists.size(); i++){
-	  if(artists.get(i).RID==artID){
-		  artist = artists.get(i);
-		  if(songID){
-		    for(int j = 0; j < artist.topTracks.length; j++){
-		      if(artist.topTracks[j].RID == songID){
-			playingSong = j;
-			loadVideo(); sidePane.resetSize();
-			//showBio();
-			midX = map(artist.x,531.749,531.749+853,0,xgrid);
-			midY = map(artist.y,231.083,231.083+810,0,ygrid);
-			midX_n = midX; midY_n = midY;
-			miniMidX = map(midX,0,xgrid,0,284);
-			miniMidY = map(midY,0,ygrid,0,270);
-			nyc.setMins();
-			break;
+  //console.log('loc'+locID+'vid'+vidID);
+
+    for(int i = 0; i < locations.size(); i++){
+	  if(locations.get(i)._id==locID){
+		  location = locations.get(i);
+		  if(vidID && location.list){
+		    for(int j = 0; j < location.list.length; j++){
+		      if(location.list[j].RID == vidID){
+				playingVideo = j;
+				//console.log(playingVideo);
+				loadVideo(); sidePane.resetSize();
+				//showBio();
+				midX = map(artist.x,531.749,531.749+853,0,xgrid);
+				midY = map(artist.y,231.083,231.083+810,0,ygrid);
+				midX_n = midX; midY_n = midY;
+				miniMidX = map(midX,0,xgrid,0,284);
+				miniMidY = map(midY,0,ygrid,0,270);
+				nyc.setMins();
+				break;
 		      }
 		    }
 		  } else{
-		    playingSong = 0;
+		    playingVideo = 0;
 		    loadVideo(); sidePane.resetSize();
 			//showBio();
 		  }
 		break;
 	  }
   }
-}*/
+}
 
 //load new video using global parameters
 void loadVideo(){
