@@ -135,6 +135,59 @@ function createPlaylist(req, res, next) {
 	});
 }
 
+// deletes a given playlist for a given user
+function deletePlaylist(req, res, next) {
+	if(!req['user']) {
+		writeError(res, "no user given"); return;
+	}
+
+	var userID = new ObjectID(req['user']);
+	if(userID == null) { writeError(res, "userID null"); return; }
+	
+	var query = getQueries(req);
+	
+	if(!query['playlistName']) {
+		writeError(res, "playlistName nonexistent"); return;	
+	}
+	var playlistName = query['playlistName'];
+	
+	if(playlistName == "Favorites") {
+		writeError(res, "cannot delete Favorites playlist"); return;	
+	}
+	
+	// find the document associated with $userID
+	usersCollection.findOne({'_id': userID}, function(err, document) {
+		if(err) { console.log(err); writeError(res); return; }
+		if(document == null)
+		{
+			writeError(res, "User " + userID + " not found"); return;
+		}
+
+		if(!document['playlists']) {
+			writeError(res, "no playlists in document"); return;		
+		}		
+		var playlists = document['playlists'];
+		
+		// if playlist $playlistName doesn't exist, return an error
+		// else delete the playlist
+		if(!playlists[playlistName]) {
+			writeError(res, "playlist " + playlistName + " nonexistent");
+		} else {
+			delete playlists[playlistName];
+		}
+
+		// update $usersCollection with new document associated with $userID
+		usersCollection.update(
+			{'_id': userID},
+			{'$set': {'playlists': playlists}}, 
+			function(err, count) {
+				if(err) { console.log(err); writeError(res); return; }
+				writeSuccess(res);
+			}
+		);
+	});
+}
+
 // renames a playlist for a given user
 function renamePlaylist(req, res, next) {
 	if(!req['user']) {
