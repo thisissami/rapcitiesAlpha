@@ -134,7 +134,8 @@ module.exports = function fileServer(maxage){
         	else readfile('/files/images/miniNYC.png', 'image/png', 'miniNYC', false);
         	break;
 
-      default: next();
+      default: 
+		next();
     } 
 	
 	  var folder,contentType;

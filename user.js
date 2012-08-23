@@ -1,3 +1,16 @@
+/*
+	playlist item needs
+	1) date+time added (definite), using javascript Date()
+	2) _id (definite)
+	3) locTitle (definite)
+	4) RID (if _id refers to a list)
+	5) itemTitle (possible)
+
+	playlists is hashmap
+	playlist is array
+	video is object with those attributes
+*/
+
 var mongodb = require('mongodb'),
   ObjectID = mongodb.ObjectID,
   //mongoserver = new mongodb.Server('10.112.0.110', 26374),
@@ -72,6 +85,46 @@ function writeCursor(res, cursor) {
     }
     res.end(JSON.stringify(docs));
   });
+}
+
+// creates a new playlist for a given user
+function createPlaylist(req, res, next) {
+	var userID = new ObjectID(req['user']);
+	if(userID == null) { writeError(res, "no userID"); return;}
+	
+	var query = getQueries(req);
+
+	var playlistName = query['playlistName'];
+	if(playlistName == null) { writeError(res, "no playlistName"); return;}
+
+	// find the document associated with $userID
+	usersCollection.findOne({'_id': userID}, function(err, document) {
+		if(err) { console.log(err); writeError(res); return; }
+		if(document == null)
+		{
+			writeError(res, "User " + userID + " not found"); return;
+		}
+		
+		var playlists = document['playlists'];
+		
+		// if playlist $playlistName already exists, return an error
+		// else create a new playlist $playlistName in $playlists
+		if(playlists[playlistName] != null) {
+			writeError(res, "playlist " + playlistName + " already exists")
+		} else {
+			playlists[playlistName] = new Array();
+		}
+
+		// update $usersCollection with new document associated with $userID
+		usersCollection.update(
+			{'_id': userID}, 
+			{'$set': {'playlists': playlists}}, 
+			function(err, count) {
+				if(err) { console.log(err); writeError(res); return; }
+				writeSuccess(res);
+			}
+		);
+	});
 }
 
 function addSong(req, res, next) {
@@ -353,7 +406,7 @@ function countSongs(req, res, next) {
 }
 
 function fbCreate(fbData, callback) {
-	usersCollection.findOne({'fbid':fbData.fbid},function(err,user){
+	usersCollection.findOne({'fbid':fbData.fbid}, function(err, user){
 		if(err){
 			console.log(err);
 			callback("error finding user in database");
@@ -361,9 +414,14 @@ function fbCreate(fbData, callback) {
 		else if(user){
 			callback(null,user._id)
 		}
-		else{
+		else {
 			console.log('FBCREATE:\n\n' + JSON.stringify(fbData));
-			fbData['favs'] = []; fbData['dates'] = [];
+			
+			//fbData['favs'] = []; fbData['dates'] = [];
+			// create a new associative array in fbData that stores the playlists
+			fbData['playlists'] = new Object();
+			// create a default Favorites playlist
+			fbData['playlists']['Favorites'] = new Array();
 			usersCollection.insert(fbData, {'safe': true}, function(err, records) {
 		        if(err) { console.log(err); callback("insertion error"); }
 				console.log('_id: '+records[0]._id);
@@ -373,6 +431,7 @@ function fbCreate(fbData, callback) {
 	});
 }
 
+exports.createPlaylist = createPlaylist;
 exports.addSong = addSong;
 exports.removeSong = removeSong;
 exports.seeSongs = seeSongs;

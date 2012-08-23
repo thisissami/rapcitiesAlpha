@@ -124,11 +124,13 @@ function authorized(req){
 			else
 				next();
 		}
+		
 		else{
 			console.log('\nNot LOGGED IN\n');
 			if(req.socket.remoteAddress || req.socket.socket.remoteAddress == '127.0.0.1'){
 		      	var folder,contentType;
 				console.log('req url = '+req.url);
+
 	  		   	if(req.url == '/landing.png'){
 					folder = __dirname+'/files/images/landing.png';
 					contentType = 'image/png';
