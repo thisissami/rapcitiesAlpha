@@ -5,9 +5,10 @@
 	3) locTitle (definite)
 	4) RID (if _id refers to a list)
 	5) itemTitle (possible)
-
-	playlists is hashmap
-	playlist is array
+	
+	playlists is Object
+	playlist is Object, playlist referred to by name
+	playlist contains video list, possibly others
 	video is object with those attributes
 */
 
@@ -87,6 +88,175 @@ function writeCursor(res, cursor) {
   });
 }
 
+// adds a video to a given playlist for a given user
+function addVideo(req, res, next) {
+	if(!req['user']) {
+		writeError(res, "no user given"); return;	
+	}
+	var userID = new ObjectID(req['user']);
+	if(userID == null) { writeError(res, "no userID"); return;}
+	
+	var query = getQueries(req);
+	
+	if(!query['playlistName']) {
+		writeError(res, "no playlistName given"); return;
+	}
+	var playlistName = query['playlistName'];
+	
+	// find the document associated with $userID
+	usersCollection.findOne({'_id': userID}, function(err, document) {
+		if(err) { console.log(err); writeError(res); return; }
+		if(document == null)
+		{
+			writeError(res, "User " + userID + " not found"); return;
+		}
+		
+		if(!document['playlists']) {
+			writeError(res, "no playlists in document"); return;		
+		}
+		var playlists = document['playlists'];
+		
+		if(!playlists[playlistName]) {
+			writeError(res, "playlist " + playlistName + " nonexistent");
+			return;
+		}
+
+		// add a video to playlist $playlistName
+		var video = new Object();
+
+		// check for location id (required)
+		if(query['_id']) {
+			video['_id'] = query['_id'];
+		} else {
+			writeError(res, "no location id _id given"); return;		
+		}
+		
+		// check for location title (required)
+		if(query['locTitle']) {
+			video['locTitle'] = query['locTitle'];
+		} else {
+			writeError(res, "no location title locTitle given"); return;		
+		}
+		
+		// check for video ID for locations with >1 videos RID (optional)
+		if(query['RID']) {
+			video['RID'] = query['RID'];
+		}
+		
+		// check for video title for locs with >1 videos itemTitle (optional)
+		if(query['itemTitle']) {
+			video['itemTitle'] = query['itemTitle'];
+		}
+		
+		// populate the date/time field (required)
+		video['time'] = new Date();
+		
+		// push video into existing videos under playlist
+		playlists[playlistName]['videos'].push(video);		
+
+		// update $usersCollection with new document associated with $userID
+		usersCollection.update(
+			{'_id': userID}, 
+			{'$set': {'playlists': playlists}}, 
+			function(err, count) {
+				if(err) { console.log(err); writeError(res); return; }
+				writeSuccess(res);
+			}
+		);
+	});
+}
+
+// removes a video from a given playlist for a given user
+function removeVideo(req, res, next) {
+	if(!req['user']) {
+		writeError(res, "no user given"); return;	
+	}
+	var userID = new ObjectID(req['user']);
+	if(userID == null) { writeError(res, "no userID"); return;}
+	
+	var query = getQueries(req);
+	
+	if(!query['playlistName']) {
+		writeError(res, "no playlistName given"); return;
+	}
+	var playlistName = query['playlistName'];
+	
+	// find the document associated with $userID
+	usersCollection.findOne({'_id': userID}, function(err, document) {
+		if(err) { console.log(err); writeError(res); return; }
+		if(document == null)
+		{
+			writeError(res, "User " + userID + " not found"); return;
+		}
+		
+		if(!document['playlists']) {
+			writeError(res, "no playlists in document"); return;		
+		}
+		var playlists = document['playlists'];
+		
+		// if playlist $playlistName doesn't exist, return an error
+		if(!playlists[playlistName]) {
+			writeError(res, "playlist " + playlistName + " nonexistent");
+			return;
+		}
+		
+		// store the videos array
+		var videos = playlists[playlistName]['videos'];
+		// stores index of the video in the playlist
+		var index = -1;
+		
+		// tries to find the index of the video in the playlist
+		// check for location id (required)
+		if(query['_id']) {
+
+			// len probably unnecessary, caching benefit?
+			var len = videos.length;
+
+			// if RID given, try matching _id and RID in the playlist
+			// else match only for _id			
+			if(query['RID']) {
+				for(var i = 0; i < len; i++) {
+					if(videos[i]['_id'] == query['_id'] && 
+						videos[i]['RID'] == query['RID']) 
+					{
+						index = i; break;
+					}
+				}
+			} else {
+				for(var i = 0; i < len; i++) {
+					if(videos[i]['_id'] == query['_id']) 
+					{
+						index = i; break;
+					}
+				}
+			}
+		} else {
+			writeError(res, "no location id _id given"); return;		
+		}
+		
+		// if a matching video was not found, throw an error
+		if(index == -1) {
+			writeError(res, "no matching video found"); return;		
+		}
+		
+		// take out the video from the video list
+		videos.splice(index, 1);
+
+		// update video list of playlist
+		playlists[playlistName]['videos'] = videos;		
+
+		// update $usersCollection with new document associated with $userID
+		usersCollection.update(
+			{'_id': userID}, 
+			{'$set': {'playlists': playlists}}, 
+			function(err, count) {
+				if(err) { console.log(err); writeError(res); return; }
+				writeSuccess(res);
+			}
+		);
+	});
+}
+
 // creates a new playlist for a given user
 function createPlaylist(req, res, next) {
 	if(!req['user']) {
@@ -117,10 +287,11 @@ function createPlaylist(req, res, next) {
 		
 		// if playlist $playlistName already exists, return an error
 		// else create a new playlist $playlistName in $playlists
-		if(!playlists[playlistName]) {
+		if(playlists[playlistName]) {
 			writeError(res, "playlist " + playlistName + " already exists");
 		} else {
-			playlists[playlistName] = new Array();
+			playlists[playlistName] = new Object();
+			playlists[playlistName]['videos'] = new Array();
 		}
 
 		// update $usersCollection with new document associated with $userID
@@ -152,7 +323,7 @@ function deletePlaylist(req, res, next) {
 	var playlistName = query['playlistName'];
 	
 	if(playlistName == "Favorites") {
-		writeError(res, "cannot delete Favorites playlist"); return;	
+		writeError(res, "cannot delete Favorites playlist!"); return;	
 	}
 	
 	// find the document associated with $userID
@@ -165,7 +336,7 @@ function deletePlaylist(req, res, next) {
 
 		if(!document['playlists']) {
 			writeError(res, "no playlists in document"); return;		
-		}		
+		}
 		var playlists = document['playlists'];
 		
 		// if playlist $playlistName doesn't exist, return an error
@@ -234,6 +405,8 @@ function renamePlaylist(req, res, next) {
 		// else rename the playlist
 		if(!playlists[oldPlaylistName]) {
 			writeError(res, "playlist " + oldPlaylistName + " nonexistent");
+		} else if (playlists[newPlaylistName]) {
+			writeError(res, "playlist " + newPlaylistName + " already exists");
 		} else {
 			playlists[newPlaylistName] = playlists[oldPlaylistName];
 			delete playlists[oldPlaylistName];
@@ -545,7 +718,7 @@ function fbCreate(fbData, callback) {
 			// create a new associative array in fbData that stores the playlists
 			fbData['playlists'] = new Object();
 			// create a default Favorites playlist
-			fbData['playlists']['Favorites'] = new Array();
+			fbData['playlists']['Favorites'] = new Object();
 			usersCollection.insert(fbData, {'safe': true}, function(err, records) {
 		        if(err) { console.log(err); callback("insertion error"); }
 				console.log('_id: '+records[0]._id);
