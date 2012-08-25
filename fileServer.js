@@ -155,7 +155,7 @@ module.exports = function fileServer(maxage){
 		folder = __dirname + '/files/locs/uploadxy.pde';
 		contentType = 'text/processing';
 	}
-	else if(req.url.split('/')[1] == 'indexold.html'){
+	else if(req.url == '/indexold.html'){
         folder = __dirname + '/pde/indexold.html';
         contentType = 'text/html; charset=utf-8';
       }

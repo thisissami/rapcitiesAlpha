@@ -7,6 +7,7 @@ HashMap longText; //used for long text
 Current current; //used to display current song info and controls
 SidePane sidePane; //displays the sidepane
 Map nyc;
+User user; //user class holding all the current user's information
 
 var grid,gridLoad; // used to hold grid of images and loading info
 
@@ -20,7 +21,6 @@ int xlength, ylength, miniRedX,miniRedY;
 void setup(){
 	WIDTH = max(700,$(window).width());// set width
 	HEIGHT = max(770,$(window).height());// set height
-	setUpLocations(); //get all the locations to draw in the map
 	logo = loadImage("http://localhost:8888/logo"); //logo displayed in top left corner of site
 	$("#parent").css("width",WIDTH).css("height",HEIGHT);
 	if(WIDTH == 700 || HEIGHT == 770){
@@ -48,6 +48,7 @@ void setup(){
 	toolBox = new Toolbox(); //menu bar
 	current = new Current(); //video playback controller (for current video only)
 	nyc = new Map(); //object dealing with functions related to the map
+	nyc.setUpLocations(); //get all the locations to draw in the map
 	grid = new Array(8); //regular 2D array of images to be
 	gridLoad = new Array(8);
 	artgrid = new Array(8); //artistic 2D array of images to be
@@ -62,6 +63,7 @@ void setup(){
 			artgridLoad[i][j] = false;
 		}
 	}
+	user = new User(); // user object! holds the user data.
 	facebook = loadImage("http://localhost:8888/facebook");
 	logout = loadImage("http://localhost:8888/exit.png");
 	heartBasket = loadImage("http://localhost:8888/heartbasket.png");
@@ -204,24 +206,18 @@ var icons = new HashMap(); //icon images that correspond to the various types
 var colors = {}; //color of each type (as shown on minimap and as displayed in hovertext)
 var locations = new ArrayList(); //list of all the locations
 
-/*fill locations, colors, icons, etc. with all the appropriate data*/
-void setUpLocations(){ 
-	$.getJSON('http://localhost:8888/loc/browse?city=NYC&hasLoc=8&public=4', function(results){      
-      if(results && results.locs){
-        for(int i = 0; i < results.locs.length; i++){
-            locations.add(results.locs[i]);
-		}
-      }
-    });
-	$.getJSON('http://localhost:8888/loc/getTypes',function(results){
-		if(results && results.types){
-			for(int i = 0; i < results.types.length; i++){
-				icons.put(results.types[i]._id, requestImage('http://localhost:8888/loc/getTypeIcon?_id='+results.types[i]._id));
-				colors[results.types[i]._id] = color(results.types[i].r, results.types[i].g, results.types[i].b);
-				//media[results.types[i]._id] = results.types[i].mediaType;
+/* class that deals with all the currently logged in user's information*/
+class User{
+	int streetCredit = 0; //total Street Credit available to this user
+	boolean exists = false; //is this a user that has registered with the site?
+	User(){
+		$.get('http://localhost:8888/user/getInfo', function(data) {
+        	if(data){
+				if(data.user) exists = true;
+				if(data.streetCredit) streetCredit = data.streetCredit;
 			}
-		}
-	});
+        });
+	}
 }
 
 /* menu that appears when a location is playing */
@@ -360,12 +356,7 @@ void keyPressed(){
 int minX, minY, maxX, maxY; //these are variables that set the boundaries for the currently visible scope
 //in the scale used by the 
 int miniMidX,miniMidY,midX,midY;
-int midX_o, midY_o; //store original x & y;
-int midX_n, midY_n; //store new x & y;
-int frames = 30; 
 class Map{
-	boolean currentlyAnimating = false;
-	int f_counter = 0; //yan hong
 	PImage miniNYC; //image in minimap
 	int ox, oy, ocx, ocy;//respectively mouseX/Y locations and midX/Y locations when mouse pressed (to move map around)
 	var widths, heights;//array of lengths of pixels of each image in the grid
@@ -377,40 +368,34 @@ class Map{
 		ox = oy = -1;
 		prep();
 	}
-
-	void animation() {
-		if (( midX_o == midX ) && ( midY_o == midY )) {
-			
-			currentlyAnimating = false;
-		}
-		else {
-			currentlyAnimating = true;
-		}
-	}
-
-	void createAnimation() {
-		animation();
-		if (currentlyAnimating == true) {
-			if (  f_counter < frames ) { 
-				f_counter++;
-				midX = lerp ( midX_o, midX_n, f_counter/frames);
-				midY = lerp ( midY_o, midY_n, f_counter/frames);
-			        miniMidX = map(midX,0,xgrid,0,284);
-			        miniMidY = map(midY,0,ygrid,0,270);
-			}
-		setMins();
-		}
-	}	 	
-	//yan hong
-
+	
 	void draw(){
-                createAnimation ();
 		drawMap();
 		drawLocations();
 		fill(0);
 		noStroke();
 		rectMode(CORNERS);
 		drawMini();
+	}
+	
+	/*fill locations, colors, icons, etc. with all the appropriate data*/
+	void setUpLocations(){ 
+		$.getJSON('http://localhost:8888/loc/browse?city=NYC&hasLoc=8&public=4', function(results){      
+	      if(results && results.locs){
+	        for(int i = 0; i < results.locs.length; i++){
+	            locations.add(results.locs[i]);
+			}
+	      }
+	    });
+		$.getJSON('http://localhost:8888/loc/getTypes',function(results){
+			if(results && results.types){
+				for(int i = 0; i < results.types.length; i++){
+					icons.put(results.types[i]._id, requestImage('http://localhost:8888/loc/getTypeIcon?_id='+results.types[i]._id));
+					colors[results.types[i]._id] = color(results.types[i].r, results.types[i].g, results.types[i].b);
+					//media[results.types[i]._id] = results.types[i].mediaType;
+				}
+			}
+		});
 	}
 	
 	//draw the map 
@@ -541,10 +526,6 @@ class Map{
 		miniRedY = map(ylength,0,ygrid,0,270);
 		midX = 2600; //starting location in the map
 		midY = 4100; //center of map in pixel scale
-		midX_o = midX;
-		midY_o = midY;
-		midX_n = midX;
-		midY_n = midY;
 		miniMidX = map(midX,0,xgrid,0,284);
 		miniMidY = map(midY,0,ygrid,0,270);
 		widths = new Array(1000,1000,1000,1000,1000,1000,1000,1000);
@@ -572,14 +553,8 @@ class Map{
 	}
 	//convert the minimap location to regular map scale and set map to said position
 	void miniToMaxi(){
-		midX_o = midX;
-                midY_o = midY;
 		midX = map(miniMidX,0,284,0,xgrid);
 		midY = map(miniMidY,0,270,0,ygrid);
-		midX_n = midX;
-                midY_n = midY;
-		f_counter = 0;
-                //yan hong
 		setMins();
 	}
 	
@@ -1605,13 +1580,11 @@ void prepPlayer(){
 void startMusic(){
   var pathArray = window.location.pathname.split('/');
   var locID, vidID;
-  if(pathArray[2] == "l"){
-    locID = pathArray[3];
-    vidID = pathArray[4];
+  if(pathArray[1] == "l"){
+    locID = pathArray[2];
+    vidID = pathArray[3];
   }
   else  locID = "nL3IpxX2XB";
-
-  //console.log('loc'+locID+'vid'+vidID);
 
     for(int i = 0; i < locations.size(); i++){
 	  if(locations.get(i)._id==locID){
@@ -1620,20 +1593,15 @@ void startMusic(){
 		    for(int j = 0; j < location.list.length; j++){
 		      if(location.list[j].RID == vidID){
 				playingVideo = j;
-				//console.log(playingVideo);
+				setNewMapLocation(location.x,location.y);
 				loadVideo(); sidePane.resetSize();
 				//showBio();
-				midX = map(artist.x,531.749,531.749+853,0,xgrid);
-				midY = map(artist.y,231.083,231.083+810,0,ygrid);
-				midX_n = midX; midY_n = midY;
-				miniMidX = map(midX,0,xgrid,0,284);
-				miniMidY = map(midY,0,ygrid,0,270);
-				nyc.setMins();
 				break;
 		      }
 		    }
 		  } else{
 		    playingVideo = 0;
+			setNewMapLocation(location.x,location.y);
 		    loadVideo(); sidePane.resetSize();
 			//showBio();
 		  }
@@ -1642,8 +1610,21 @@ void startMusic(){
   }
 }
 
+void setNewMapLocation(x,y){
+	midX = map(x,531.749,531.749+853,0,xgrid);
+	midY = map(y,231.083,231.083+810,0,ygrid);
+	miniMidX = map(midX,0,xgrid,0,284);
+	miniMidY = map(midY,0,ygrid,0,270);
+	nyc.setMins();
+}
+boolean playedSomething = false;//bool var to check if one thing has been played or not
 //load new video using global parameters
 void loadVideo(){
+	if(!playedSomething){
+		playedSomething = true;
+	}else if(!user.exists){
+		link('http://localhost:8888/logN');
+	}
    	if(location.list && location.list.length > 0){
 	    player.loadVideoById(location.list[playingVideo].ytid);
 		$.ajax({//increase the viewcount on the server

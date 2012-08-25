@@ -70,12 +70,6 @@ passport.use(new fpass({
     var arr = pathname.split('?')[0];
 
     switch(arr){
-      /*case '/addArtist': console.log('OH SHIT SOME SUCCESS!'); uploader.uploadLoc(res, parsed.query); break;
-	  case '/getArtists': console.log('GETTING ZE ARTISTS!!!!'); uploader.getLocs(res, parsed.query); break;
-	  case '/addEvent': console.log('OH SHIT ADDING AN EVENT!!!!'); uploader.uploadEvent(res, parsed.query); break;
-      case '/getEvents': console.log('OH SHIT GETTING AN EVENT!!!!'); uploader.getEvents(res, parsed.query); break;*/
-	  //case '/getArtistInfo': artistInfo.get(res, parsed.query); break;
-	  //case '/getBio': artistInfo.getBio(res, parsed.query); break;
       case '/seeSongs': users.seeSongs(req, res, next); break;
       case '/addSong': users.addSong(req, res, next); break;
       case '/removeSong': users.removeSong(req, res, next); break;
@@ -121,8 +115,48 @@ function authorized(req){
 				res.writeHead(302, {'location':'http://localhost:8888/login'});
 				res.end();
 			}
+			else if(req.url.split('/')[1] == 'l'){
+				fs.readFile(__dirname + '/pde/indexold.html',function(error,content){
+					if(error){res.writeHead(500); res.end();}
+					else{
+						res.writeHead(200, {
+							'Content-Type':'text/html; charset=utf-8'
+						});
+						res.end(content);
+					}
+				});	 
+			}
 			else
 				next();
+		}
+		else if(req.url.split('/')[1] == 'l'){
+			if(!req.session || !req.session.beenHere){
+				console.log('boop boop boop');
+				fs.readFile(__dirname + '/pde/indexold.html',function(error,content){
+					if(error){res.writeHead(500); res.end();}
+					else{
+						req.session.beenHere = 'Y';
+						res.writeHead(200, {
+							'Content-Type':'text/html; charset=utf-8'//,
+							//'Set-Cookie':'INU=IS; Path=/; Max-Age=86400;'
+						});
+						res.end(content);
+					}
+				});	 
+			}
+			else{
+				fs.readFile(__dirname + '/files/landing.html',function(error,content){
+					res.writeHead(200,{'Content-Type':'text/html; charset=utf-8'});
+		        	res.end(content);
+				});
+			}
+		}
+		else if(req.url == '/logN'){
+			req.session.beenHere = 'N';
+			fs.readFile(__dirname + '/files/landing.html',function(error,content){
+				res.writeHead(200,{'Content-Type':'text/html; charset=utf-8'});
+	        	res.end(content);
+			});
 		}
 		else{
 			console.log('\nNot LOGGED IN\n');
@@ -151,6 +185,10 @@ function authorized(req){
 					res.end('Your login attempt with Facebook failed. If this is an error, please try logging in again or get in touch with Facebook.');
 					return;
 				}
+				else if(req.session.beenHere == 'Y'){
+					next();
+					return;
+				}
 				else{
 		        	folder = __dirname + '/files/landing.html';
 		        	contentType = 'text/html; charset=utf-8';
@@ -168,8 +206,9 @@ function authorized(req){
 			          }
 			        });
 			      }
-					else{ res.writeHead(500); res.end();}
+				  else{ res.writeHead(500); res.end();}
 			}
+			else if(req.cookie.INU) next();
 			else {res.writeHead(500); res.end();}
 		}
 	}

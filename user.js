@@ -335,7 +335,7 @@ console.log(favs);
     });
 }
 
-function countSongs(req, res, next) {
+function countSongs(req, res) {
   var userid = new ObjectID(req.user);
 
     usersCollection.findOne({'_id': userid}, function(err, document) {
@@ -351,6 +351,15 @@ function countSongs(req, res, next) {
       }
     });
 }
+
+function getInfo(req, res){
+	if(req.user){
+		res.writeHead(200, {'Content-Type': 'application/json'});
+		var returned = {'success':true,'exists':true,'streetCredit':0};
+		res.end(JSON.stringify(returned));
+	}
+}
+
 
 function fbCreate(fbData, callback) {
 	usersCollection.findOne({'fbid':fbData.fbid},function(err,user){
