@@ -301,10 +301,10 @@ int minX, minY, maxX, maxY;
 int miniMidX,miniMidY,midX,midY;
 int midX_o, midY_o; //store original x & y;
 int midX_n, midY_n; //store new x & y;
-int frames = 30; 
+int frames = 30; //default frames
 class Map{
 	boolean currentlyAnimating = false;
-	int f_counter = 0; //yan hong
+	int f_counter = 0;
 	PImage miniNYC; //image in minimap
 	int ox, oy, ocx, ocy;//respectively mouseX/Y locations and midX/Y locations when mouse pressed (to move map around)
 	var widths, heights;//array of lengths of pixels of each image in the grid
@@ -316,40 +316,41 @@ class Map{
 		ox = oy = -1;
 		prep();
 	}
-
+	
 	void animation() {
 		if (( midX_o == midX ) && ( midY_o == midY )) {
-			
 			currentlyAnimating = false;
 		}
-		else {
-			currentlyAnimating = true;
-		}
+	else {
+		currentlyAnimating = true;
+	}
 	}
 
-	void createAnimation() {
+	void createAnimation(x1,y1,x2,y2,frames) {
 		animation();
 		if (currentlyAnimating == true) {
-			if (  f_counter < frames ) { 
+			if ( f_counter < frames ) {
 				f_counter++;
-				midX = lerp ( midX_o, midX_n, f_counter/frames);
-				midY = lerp ( midY_o, midY_n, f_counter/frames);
-			        miniMidX = map(midX,0,xgrid,0,284);
-			        miniMidY = map(midY,0,ygrid,0,270);
+				midX = lerp ( x1, x2, f_counter/frames);
+				midY = lerp ( y1, y2, f_counter/frames);
+				miniMidX = map(midX,0,xgrid,0,284);
+				miniMidY = map(midY,0,ygrid,0,270);
 			}
-		setMins();
+			setMins();
 		}
-	}	 	
-	//yan hong
+	}	
+
+		// Yan Hong
 
 	void draw(){
-                createAnimation ();
+              createAnimation (midX_o, midY_o, midX_n, midY_n, 30);
 		drawMap();
 		drawLocations();
 		fill(0);
 		noStroke();
 		rectMode(CORNERS);
 		drawMini();
+		// Yan Hong
 	}
 	
 	//draw the map 
@@ -484,6 +485,7 @@ class Map{
 		midY_o = midY;
 		midX_n = midX;
 		midY_n = midY;
+		//Yan Hong
 		miniMidX = map(midX,0,xgrid,0,284);
 		miniMidY = map(midY,0,ygrid,0,270);
 		widths = new Array(1000,1000,1000,1000,1000,1000,1000,1000);
@@ -492,8 +494,6 @@ class Map{
 	}
 	//check if mouse is pressed within minimap
 	void miniMousePressed(){
-
-                // record the x & y before mouse pressed
 		if(mouseX>PANEMINX && mouseY>PANEMAXY && mouseX<PANEMAXX && mouseY<MINIMAXY){
 			miniPressed = true;
 			miniMidX = min(max(miniRedX/2,mouseX - PANEMINX),284-miniRedX/2);
@@ -513,13 +513,16 @@ class Map{
 	void miniToMaxi(){
 		midX_o = midX;
                 midY_o = midY;
+		// record the x & y before mouse pressed
 		midX = map(miniMidX,0,284,0,xgrid);
 		midY = map(miniMidY,0,270,0,ygrid);
 		midX_n = midX;
                 midY_n = midY;
+		// record the x & y after mouse pressed
 		f_counter = 0;
-                //yan hong
+		// reset counter 
 		setMins();
+		// Yan Hong
 	}
 	
 	void miniMouseReleased(){
@@ -1647,7 +1650,6 @@ void startMusic(){
 			//prepareBio();
 			midX = map(artist.x,531.749,531.749+853,0,xgrid);
 			midY = map(artist.y,231.083,231.083+810,0,ygrid);
-			midX_n = midX; midY_n = midY;
 			miniMidX = map(midX,0,xgrid,0,284);
 			miniMidY = map(midY,0,ygrid,0,270);
 			nyc.setMins();
