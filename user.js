@@ -17,7 +17,7 @@ var mongodb = require('mongodb'),
   //mongoserver = new mongodb.Server('10.112.0.110', 26374),
   mongoserver = new mongodb.Server('localhost', 26374),
   dbConnector = new mongodb.Db('uenergy', mongoserver),
-  artists, usersCollection;
+  artists, usersCollection, playlists;
 
 dbConnector.open(function(err, db){
   if(err) {
@@ -44,6 +44,15 @@ dbConnector.open(function(err, db){
         usersCollection = collection;
       }
     });
+	db.createCollection('playlists', function(err, collection) {
+		if(err) {
+			console.log('error creating playlists collection');
+			console.log(err.message);
+			return;
+		}
+		
+		playlists = collection;
+	});
   }
 });
 
@@ -780,16 +789,36 @@ function fbCreate(fbData, callback) {
 		else {
 			console.log('FBCREATE:\n\n' + JSON.stringify(fbData));
 			
-			//fbData['favs'] = []; fbData['dates'] = [];
-			// create a new associative array in fbData that stores the playlists
-			fbData['playlists'] = new Object();
-			// create a default Favorites playlist
-			fbData['playlists']['Favorites'] = new Object();
-			usersCollection.insert(fbData, {'safe': true}, function(err, records) {
-		        if(err) { console.log(err); callback("insertion error"); }
-				console.log('_id: '+records[0]._id);
-				callback(null,records[0]._id);
-		    });
+			usersCollection.insert(
+				fbData, 
+				{'safe': true}, 
+				function(err, records) {
+				    if(err) { console.log(err); callback("insertion error"); }
+					console.log('_id: '+records[0]._id);
+					
+					var favorites = {
+						'name': "Favorites",
+						'owner': records[0]['_id'],
+						'videos': new Array()
+					};
+					playlists.insert(favorites, function(err, result) {
+						if(err) { callback("insertion error playlists"); }
+
+						// update with reference to favorites in user doc
+						usersCollection.update(
+							{'_id': records[0]['_id']},
+							{'$set': {'favId': result[0]['_id']}}, 
+							function(err, count) {
+								if(err) { 
+									callback("update error usersCollection")};
+								}
+						
+								callback(null,records[0]._id);
+							}
+						);
+					});
+				}
+			);
 		}
 	});
 }

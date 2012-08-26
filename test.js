@@ -51,36 +51,41 @@ dbConnector.open(function(err, db) {
 });
 
 function writeHeader(res, type) {
-  if(type == "html")
+  /*if(type == "html")
     res.writeHead(200, {'Content-Type': 'text/html'});
   else if(type == "json")
-    res.writeHead(200, {'Content-Type': 'application/json'});
+    res.writeHead(200, {'Content-Type': 'application/json'});*/
+	console.log(type);
 }
 
 function writeError(res, value) {
-  writeHeader(res, "json");
+  /*writeHeader(res, "json");
   if(value)
     res.end('{"response": "error", "value": ' + value + '}');
   else
-    res.end('{"response": "error"}');
+    res.end('{"response": "error"}');*/
+	console.log(value);
 }
 
 function writeSuccess(res, value) {
-  writeHeader(res, "json");
+  /*writeHeader(res, "json");
   if(value)
     res.end('{"response": "success", "value": ' + value + '}');
   else
-    res.end('{"response": "success"}');
+    res.end('{"response": "success"}');*/
+	console.log(value);
 }
 
 // creates a new playlist for a given user
-function createPlaylist(req, res, next) {
-	if(!req['user']) {
+function addPlaylist(req, res, next) {
+	/*if(!req['user']) {
 		writeError(res, "no user given"); return;	
 	}
 	var userID = new ObjectID(req['user']);
 	if(userID == null) { writeError(res, "no userID"); return;}
+	*/
 	
+	var userId = req['userId'];
 	/*var query = getQueries(req);
 
 	if(!query['playlistName']) {
@@ -88,20 +93,57 @@ function createPlaylist(req, res, next) {
 	}
 	var playlistName = query['playlistName'];
 	*/
-	
+	var playlistName = req['playlistName'];
 	
 	var playlist = new Object();
-	playlist['name'] = req['playlistName'];
-	playlist['creator'] = userID;
-	playlist['owner'] = userID;
-	playlist['subscribers'] = new Array(userID);
+	playlist['name'] = playlistName;
+	playlist['owner'] = userId;
 	playlist['videos'] = new Array();
 	
-	playlists.insert(playlist);
+	// inserts a playlist into the playlists collection
+	// updates the user's info with a reference to the inserted playlist
+	function insertPlaylist() {
+		playlists.insert(playlist, function(err, result) {
+			if(err) { writeError(res, "error inserting playlist"); return }
+
+			var playlistRef = {
+				'name': playlistName,
+				'_id': result[0]['_id']
+			};
+
+			// update with reference to playlists in user doc
+			usersCollection.update(
+				{'_id': userId},
+				{'$push': {'playlists': playlistRef}}, 
+				function(err, count) {
+					if(err) { 
+						writeError(res, "error updating user doc"); 
+						return; 
+					}
+				
+					writeSuccess(res, result);
+				}
+			);
+		});
+	}
+	
+	// if a playlist exists with this name under this user, return error
+	// otherwise insert the playlist
+	// is this fast enough?
+	playlists.findOne(
+		{'owner': userId, 'name': playlistName}, 
+		function(err, doc) {
+			if(doc) { 
+				writeError(res, "playlist \""+playlistName+"\" exists already");
+				return;
+			}
+
+			insertPlaylist();
+		}
+	);
 }
 
-// returns info about user's favorites playlist if it exists
-// creates favorites playlist otherwise and returns info
+// returns user's favorites playlist if it exists
 function getFavorite(userId) {
 	usersCollection.findOne({'_id': userId}, function(err, doc) {
 		if(err) { return {'error': err}; }
@@ -146,5 +188,6 @@ function getPlaylists() {
 
 function run() {
 	var userId = new ObjectID("50329ad3ac6815bf24000001");
-	getFavorite(userId);
+	//getFavorite(userId);
+	addPlaylist({'userId': userId, 'playlistName': '0'});
 }
