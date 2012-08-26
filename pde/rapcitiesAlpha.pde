@@ -7,6 +7,7 @@ HashMap longText; //used for long text
 Current current; //used to display current song info and controls
 SidePane sidePane; //displays the sidepane
 Map nyc;
+User user; //user class holding all the current user's information
 
 var grid,gridLoad; // used to hold grid of images and loading info
 
@@ -20,7 +21,6 @@ int xlength, ylength, miniRedX,miniRedY;
 void setup(){
 	WIDTH = max(700,$(window).width());// set width
 	HEIGHT = max(770,$(window).height());// set height
-	setUpLocations(); //get all the locations to draw in the map
 	logo = loadImage("http://localhost:8888/logo"); //logo displayed in top left corner of site
 	$("#parent").css("width",WIDTH).css("height",HEIGHT);
 	if(WIDTH == 700 || HEIGHT == 770){
@@ -48,6 +48,7 @@ void setup(){
 	toolBox = new Toolbox(); //menu bar
 	current = new Current(); //video playback controller (for current video only)
 	nyc = new Map(); //object dealing with functions related to the map
+	nyc.setUpLocations(); //get all the locations to draw in the map
 	grid = new Array(8); //regular 2D array of images to be
 	gridLoad = new Array(8);
 	artgrid = new Array(8); //artistic 2D array of images to be
@@ -62,6 +63,7 @@ void setup(){
 			artgridLoad[i][j] = false;
 		}
 	}
+	user = new User(); // user object! holds the user data.
 	facebook = loadImage("http://localhost:8888/facebook");
 	logout = loadImage("http://localhost:8888/exit.png");
 	heartBasket = loadImage("http://localhost:8888/heartbasket.png");
@@ -130,7 +132,7 @@ void draw(){
 	if(curLoc > -1)//draw currently playing location
 		nyc.drawCurrentInfo();
 	sidePane.draw();// draw the sidepane!
-	if(location && location.list && location.list.length)  
+	if(location)  
 		toolBox.draw();
 	current.draw();
 	if(hoverLoc > -1)
@@ -204,24 +206,28 @@ var icons = new HashMap(); //icon images that correspond to the various types
 var colors = {}; //color of each type (as shown on minimap and as displayed in hovertext)
 var locations = new ArrayList(); //list of all the locations
 
-/*fill locations, colors, icons, etc. with all the appropriate data*/
-void setUpLocations(){ 
-	$.getJSON('http://localhost:8888/loc/browse?city=NYC&hasLoc=8&public=4', function(results){      
-      if(results && results.locs){
-        for(int i = 0; i < results.locs.length; i++){
-            locations.add(results.locs[i]);
-		}
-      }
-    });
-	$.getJSON('http://localhost:8888/loc/getTypes',function(results){
-		if(results && results.types){
-			for(int i = 0; i < results.types.length; i++){
-				icons.put(results.types[i]._id, requestImage('http://localhost:8888/loc/getTypeIcon?_id='+results.types[i]._id));
-				colors[results.types[i]._id] = color(results.types[i].r, results.types[i].g, results.types[i].b);
-				//media[results.types[i]._id] = results.types[i].mediaType;
+/* class that deals with all the currently logged in user's information*/
+class User{
+	int streetCredit = 0; //total Street Credit available to this user
+	boolean exists = false; //is this a user that has registered with the site?
+	var favorites; //will hold favorites playlist
+	HashMap playlists;
+	User(){
+		$.get('http://localhost:8888/user/getInfo', function(data) {
+        	if(data){
+				if(data.user){
+					exists = true;
+					if(data.streetCredit) streetCredit = data.streetCredit;
+					$.get('http://localhost:8888/user/getFavorites?type=JSON', function(data){
+						alert(data);//bo han
+					})
+					$.get('http://localhost:8888/user/getPlaylists', function(data){
+						alert(data);//bo han
+					})				
+				}
 			}
-		}
-	});
+        });
+	}
 }
 
 /* menu that appears when a location is playing */
@@ -250,7 +256,7 @@ class Toolbox{
 		rect(toolLeft, toolTop, toolLeft+toolWidth, toolTop+toolFull);
 		
 		shapeMode(CENTER);
-		if(location.list[playingVideo].fav) //draw either the unheart or heart icon
+		if(location.fav || (location.list && location.list[playingVideo].fav)) //draw either the unheart or heart icon
 			shape(heart,toolLeft+toolHalf,toolTop+toolHalf,toolHalf+4, toolHalf+2);
 		else
 			shape(greyHeart,toolLeft+toolHalf,toolTop+toolHalf,toolHalf+4, toolHalf+2);
@@ -267,7 +273,7 @@ class Toolbox{
 			textSize(14); fill(0); stroke(255); rectMode(CORNERS);
 			if(mouseX<toolLeft+toolFull){//heart
 				var heartext;
-				if(location.list[playingVideo].fav) heartext = "Un-Heart Song";
+				if(location.fav || (location.list && location.list[playingVideo].fav)) heartext = "Un-Heart Song";
 				else heartext = "Heart Song";
 				rect(toolLeft, toolTop-5, toolLeft+textWidth(heartext)+4,toolTop-25);
 				fill(255);
@@ -305,15 +311,25 @@ class Toolbox{
 	void mouseClicked(){
 		switch(toolHover){
 			case(HEART):break;
-			/*console.log('heart');
-				if(location.list[playingVideo].fav){
-					$.get('http://localhost:8888/removeSong', { "songid": artist.RID+" "+artist.topTracks[playingSong].RID});
-					location.list[playingVideo].fav = false;
+				if(location.list){
+					if(location.list[playingVideo].fav){
+						$.get('http://localhost:8888/user/removeVideo', { "locationID": location._id, "RID":location.list[playingVideo].RID});
+						location.list[playingVideo].fav = false;
+					} //bo han
+					else{
+						$.get('http://localhost:8888/user/addVideo', { "locationID": location._id, "RID":location.list[playingVideo].RID});
+						location.list[playingVideo].fav = true;
+					}
+				} else{
+					if(location.fav){
+						$.get('http://localhost:8888/user/removeVideo', { "locationID": location._id});
+						location.fav = false;
+					} //bo han
+					else{
+						$.get('http://localhost:8888/user/addVideo', { "locationID": location._id});
+						location.fav = true;
+					}
 				}
-				else{
-					$.get('http://localhost:8888/addSong', { "songid": artist.RID+" "+artist.topTracks[playingSong].RID});
-					location.list[playingVideo].fav = true;
-				}*/
 				break;
 			case(BASKET):break;
 				showFavorites();
@@ -336,9 +352,9 @@ class Toolbox{
 			overlay = true;
 		}
 		else{
-          $.get('http://localhost:8888/seeSongs', function(data) {
-            $('#overlay').html(data).dialog('open');
-			overlay = false;
+          $.get('http://localhost:8888/user/getFavorites?type=HTML', function(data) {
+				$('#overlay').html(data).dialog('open'); //bo han
+				overlay = false;
           });
 		}
 	}
@@ -372,7 +388,7 @@ class Map{
 		ox = oy = -1;
 		prep();
 	}
-	  
+	
 	void draw(){
 		drawMap();
 		drawLocations();
@@ -380,6 +396,26 @@ class Map{
 		noStroke();
 		rectMode(CORNERS);
 		drawMini();
+	}
+	
+	/*fill locations, colors, icons, etc. with all the appropriate data*/
+	void setUpLocations(){ 
+		$.getJSON('http://localhost:8888/loc/browse?city=NYC&hasLoc=8&public=4', function(results){      
+	      if(results && results.locs){
+	        for(int i = 0; i < results.locs.length; i++){
+	            locations.add(results.locs[i]);
+			}
+	      }
+	    });
+		$.getJSON('http://localhost:8888/loc/getTypes',function(results){
+			if(results && results.types){
+				for(int i = 0; i < results.types.length; i++){
+					icons.put(results.types[i]._id, requestImage('http://localhost:8888/loc/getTypeIcon?_id='+results.types[i]._id));
+					colors[results.types[i]._id] = color(results.types[i].r, results.types[i].g, results.types[i].b);
+					//media[results.types[i]._id] = results.types[i].mediaType;
+				}
+			}
+		});
 	}
 	
 	//draw the map 
@@ -518,6 +554,8 @@ class Map{
 	}
 	//check if mouse is pressed within minimap
 	void miniMousePressed(){
+
+                // record the x & y before mouse pressed
 		if(mouseX>PANEMINX && mouseY>PANEMAXY && mouseX<PANEMAXX && mouseY<MINIMAXY){
 			miniPressed = true;
 			miniMidX = min(max(miniRedX/2,mouseX - PANEMINX),284-miniRedX/2);
@@ -1556,47 +1594,57 @@ void prepPlayer(){
 	player = document.getElementById('YouTubeP');
 	playMode = VIDEO;
 	player.setVolume(volume);
-	//if(locations.size() > 0) startMusic();
+	if(locations.size() > 0) startMusic();
 }
-/*
+
 void startMusic(){
   var pathArray = window.location.pathname.split('/');
-  var artID, songID;
-  if(pathArray[1] == "song"){
-    artID = pathArray[2];
-    songID = pathArray[3];
+  var locID, vidID;
+  if(pathArray[1] == "l"){
+    locID = pathArray[2];
+    vidID = pathArray[3];
   }
-  else  artID = "ARLGIX31187B9AE9A0";
+  else  locID = "nL3IpxX2XB";
 
-    for(int i = 0; i < artists.size(); i++){
-	  if(artists.get(i).RID==artID){
-		  artist = artists.get(i);
-		  if(songID){
-		    for(int j = 0; j < artist.topTracks.length; j++){
-		      if(artist.topTracks[j].RID == songID){
-			playingSong = j;
-			loadVideo(); sidePane.resetSize();
-			//showBio();
-			midX = map(artist.x,531.749,531.749+853,0,xgrid);
-			midY = map(artist.y,231.083,231.083+810,0,ygrid);
-			miniMidX = map(midX,0,xgrid,0,284);
-			miniMidY = map(midY,0,ygrid,0,270);
-			nyc.setMins();
-			break;
+    for(int i = 0; i < locations.size(); i++){
+	  if(locations.get(i)._id==locID){
+		  location = locations.get(i);
+		  if(vidID && location.list){
+		    for(int j = 0; j < location.list.length; j++){
+		      if(location.list[j].RID == vidID){
+				playingVideo = j;
+				setNewMapLocation(location.x,location.y);
+				loadVideo(); sidePane.resetSize();
+				//showBio();
+				break;
 		      }
 		    }
 		  } else{
-		    playingSong = 0;
+		    playingVideo = 0;
+			setNewMapLocation(location.x,location.y);
 		    loadVideo(); sidePane.resetSize();
 			//showBio();
 		  }
 		break;
 	  }
   }
-}*/
+}
 
+void setNewMapLocation(x,y){
+	midX = map(x,531.749,531.749+853,0,xgrid);
+	midY = map(y,231.083,231.083+810,0,ygrid);
+	miniMidX = map(midX,0,xgrid,0,284);
+	miniMidY = map(midY,0,ygrid,0,270);
+	nyc.setMins();
+}
+boolean playedSomething = false;//bool var to check if one thing has been played or not
 //load new video using global parameters
 void loadVideo(){
+	if(!playedSomething){
+		playedSomething = true;
+	}else if(!user.exists){
+		link('http://localhost:8888/logN');
+	}
    	if(location.list && location.list.length > 0){
 	    player.loadVideoById(location.list[playingVideo].ytid);
 		$.ajax({//increase the viewcount on the server
@@ -1614,12 +1662,20 @@ void loadVideo(){
 		//updateToolbox();
 	 //$("#ytplayer").html("<p>Couldn't find this song on YouTube</p>");
 	}
-/*	FAV FAV FAV
 	
-	$.get('http://localhost:8888/isFav', {'songid': artist.RID + " " + artist.topTracks[playingSong].RID}, function(data){
-		if(data.value)
-			artist.topTracks[playingSong].fav = true;
-	});*/
+	/*check to see if currently loaded song is 
+	
+	
+	
+	OMG
+	
+	
+	WORK FOR SAMI
+	
+	
+	
+	in favorites list or not
+	*/
 }
 
 //play a video using id (and if included/appropriate) position in list provided
