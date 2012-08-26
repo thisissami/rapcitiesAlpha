@@ -80,15 +80,21 @@ function addPlaylist(req, res, next) {
 	var userID = new ObjectID(req['user']);
 	if(!userID) { writeError(res, "no userID"); return;}
 	
-	/*var query = getQueries(req);
+	if(!req['query']) {
+		writeError(res, "no query under req!"); return;
+	}
 
-	if(!query['playlistName']) {
+	if(!req['query']['playlistName']) {
 		writeError(res, "no playlistName given"); return;
 	}
-	var playlistName = query['playlistName'];
-	*/
-	var playlistName = req['playlistName'];
+
+	var playlistName = req['query']['playlistName'];
 	
+	if(playlistName == "Favorites") {
+		writeError(res, "playlist can't be named \"Favorites\"");
+		return;
+	}
+
 	var playlist = {
 		'name': playlistName,
 		'owner': userID,
@@ -146,13 +152,14 @@ function removePlaylist(req, res, next) {
 	var userID = new ObjectID(req['user']);
 	if(!userID) { writeError(res, "no userID"); return;}
 
-	/*var query = getQueries(req);
-
-	if(!query['playlistName']) {
-		writeError(res, "no playlistName given"); return;
+	if(!req['query']) {
+		writeError(res, "no query under req!"); return;
 	}
-	var playlistName = query['playlistName'];
-	*/
+
+	if(!req['query']['playlistID']) {
+		writeError(res, "no playlistID given"); return;
+	}
+	
 	var playlistID = new ObjectID(req['playlistID']);
 	
 	// find the user doc, check that playlistID is not the favorites
@@ -165,7 +172,7 @@ function removePlaylist(req, res, next) {
 			return; 
 		}		
 		// error if trying to delete Favorites playlist
-		if(doc['favId'] == userID) {
+		if(doc['favId'].equals(playlistID)) {
 			writeError(res, "cannot delete Favorites playlist"); return;
 		}
 		
@@ -184,7 +191,6 @@ function removePlaylist(req, res, next) {
 						pos = i; break;
 					}
 				}
-
 				// found a reference to the playlist in the user doc
 				if(pos != -1) {
 					playlistRefs.splice(pos, 1);
@@ -205,9 +211,12 @@ function removePlaylist(req, res, next) {
 }
 
 function run() {
-	var user = "50329ad3ac6815bf24000001";
-	var playlistID = "503a8b6d4f286ebf38000001";
-	//addPlaylist({'user': user, 'playlistName': '1'});
-	removePlaylist({'user': user, 'playlistID': playlistID});
+	var req = new Object();
+	req['user'] = "50329ad3ac6815bf24000001";
+	req['query'] = new Object();
+	req['query']['playlistID'] = "503a8b6d4f286ebf38000001";
+	req['query']['playlistName'] = 'new';
+	addPlaylist(req);
+	//removePlaylist(req);
 }
 
