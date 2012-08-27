@@ -170,7 +170,7 @@ function removePlaylist(req, res, next) {
 		if(!doc) {
 			writeError(res, "user doesn't exist in system"); 
 			return; 
-		}		
+		}
 		// error if trying to delete Favorites playlist
 		if(doc['favId'].equals(playlistID)) {
 			writeError(res, "cannot delete Favorites playlist"); return;
@@ -186,7 +186,6 @@ function removePlaylist(req, res, next) {
 				var playlistRefs = doc['playlists'];
 
 				for(var i = 0; i < playlistRefs.length; i++) {
-					console.log(playlistRefs[i]['_id']);
 					if(playlistRefs[i]['_id'].equals(playlistID)) {
 						pos = i; break;
 					}
@@ -194,6 +193,7 @@ function removePlaylist(req, res, next) {
 				// found a reference to the playlist in the user doc
 				if(pos != -1) {
 					playlistRefs.splice(pos, 1);
+					// update user doc to reflect deletion
 					usersCollection.update(
 						{'_id': userID},
 						{'$set': {'playlists': playlistRefs}}, 
@@ -210,13 +210,93 @@ function removePlaylist(req, res, next) {
 	
 }
 
+// renames a given playlist to a given name
+function renamePlaylist(req, res, next) {
+	if(!req['user']) {
+		writeError(res, "no user given"); return;	
+	}
+	var userID = new ObjectID(req['user']);
+	if(!userID) { writeError(res, "no userID"); return;}
+
+	if(!req['query']) {
+		writeError(res, "no query under req!"); return;
+	}
+
+	if(!req['query']['newPlaylistName']) {
+		writeError(res, "no newPlaylistName provided"); return;
+	}
+
+	if(!req['query']['playlistID']) {
+		writeError(res, "no playlistID provided"); return;
+	}
+
+	var newPlaylistName = req['query']['newPlaylistName'];
+	var playlistID = new ObjectID(req['query']['playlistID']);
+
+	// make sure user isn't trying to rename a playlist to Favorites
+	if(newPlaylistName == "Favorites") {
+		writeError(res, "cannot rename a playlist to \"Favorites\""); return;
+	}
+
+	usersCollection.findOne({'_id': userID}, function(err, userDoc) {
+		if(err) { writeError(res, "error finding user document"); return; }
+		if(!userDoc) { 
+			writeError(res, "user doesn't exist in system"); return; 
+		}
+
+		// disallow renaming Favorites playlist
+		if(userDoc['favId'].equals(playlistID)) {
+			writeError(res, "cannot rename Favorites playlist"); return;
+		}
+		var pos = -1;
+		// disallow renaming a playlist to an already-used name
+		var playlistRefs = userDoc['playlists'];
+		// is this good enough for long playlists?
+		for(var i = 0; i < playlistRefs.length; i++) {
+			if(playlistRefs[i]['name'] == newPlaylistName) {
+				writeError(res, "\""+newPlaylistName + "\" already used"); 
+				return;
+			}
+			if(playlistRefs[i]['_id'].equals(playlistID))
+				pos = i;
+		}
+		if(pos == -1) {
+			writeError(res, "no reference to "+playlistID +" in user doc");
+			return;
+		}
+
+		// rename the playlist
+		playlists.update({'_id': playlistID, 'owner': userID}, 
+			{'$set': {'name': newPlaylistName}},
+			function(err) {
+				if(err) { writeError(res, "error renaming playlist"); return; }
+
+				playlistRefs[pos]['name'] = newPlaylistName;	
+
+				// update the user's doc
+				usersCollection.update({'_id': userID},
+					{'$set': {'playlists': playlistRefs}}, 
+					function (err) {
+						if(err) { writeError(res, err); return; }
+						writeSuccess(res);
+					}
+				);
+			}
+		);
+	});
+}
+
 function run() {
 	var req = new Object();
 	req['user'] = "50329ad3ac6815bf24000001";
 	req['query'] = new Object();
-	req['query']['playlistID'] = "503a8b6d4f286ebf38000001";
-	req['query']['playlistName'] = 'new';
-	addPlaylist(req);
+	req['query']['playlistID'] = "503adc14dd62abcf44000001";
+	req['query']['playlistName'] = 'honolulu';
+	req['query']['newPlaylistName'] = 'melbourne';
+
+	//addPlaylist(req);
 	//removePlaylist(req);
+	renamePlaylist(req);
+	//usersCollection.update({'name': 'Bo Ning Han'}, {'$set': {'favId': new ObjectID("503aaebcb631338a45000001")}});
 }
 
