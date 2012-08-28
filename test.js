@@ -95,10 +95,13 @@ function addPlaylist(req, res, next) {
 		return;
 	}
 
+	var timestamp = new Date();
+
 	var playlist = {
 		'name': playlistName,
 		'owner': userID,
-		'videos': new Array()
+		'videos': new Array(),
+		'timestamp': timestamp
 	};
 	
 	// inserts a playlist into the playlists collection
@@ -107,9 +110,12 @@ function addPlaylist(req, res, next) {
 		playlists.insert(playlist, function(err, result) {
 			if(err) { writeError(res, err); return }
 
+			var playlistID = result[0]['_id'];
+
 			var playlistRef = {
 				'name': playlistName,
-				'_id': result[0]['_id']
+				'_id': playlistID,
+				'timestamp': timestamp
 			};
 
 			// update with reference to playlists in user doc
@@ -307,10 +313,14 @@ function getPlaylists(req, res, next) {
 
 		// contains _id of the favId
 		// contains Array of names and _ids of playlists
-		var favAndPlaylists = {
-			'favId': userDoc['favId'],
-			'playlists': userDoc['playlists']
-		};
+		var favAndPlaylists = new Object();
+		if(!userDoc['favId']) {
+			writeError(res, "favId field under user doc nonexistent"); return;	
+		}
+		favAndPlaylists['favId'] = userDoc['favId'];
+
+		if(userDoc['playlists'])
+			favAndPlaylists['playlists'] = userDoc['playlists'];
 		writeSuccess(res, favAndPlaylists);
 	});
 }
@@ -365,6 +375,8 @@ function addVideo(req, res, next) {
 	}
 	var playlistID = new ObjectID(query['playlistID']);
 
+	var timestamp = new Date();
+
 	// Object that stores video information
 	var video = new Object();
 
@@ -376,6 +388,8 @@ function addVideo(req, res, next) {
 	if(query['locTitle']) video['locTitle'] = query['locTitle'];
 	if(query['RID']) video['RID'] = query['RID'];
 	if(query['itemTitle']) video['itemTitle'] = query['itemTitle'];
+
+	video['timestamp'] = timestamp;
 
 	// doing it this way because permission to modify may extend to other users
 	/* not checking owner until playlist is retrieved, so permission policy
@@ -460,7 +474,7 @@ function removeVideo(req, res, next) {
 		var pos = -1;
 		for(var i = 0; i < videos.length; i++) {
 			if(videos[i]['locationID'] == locationID) {
-				if(RID) {
+				if(videos[i]['RID']) {
 					if(videos[i]['RID'] == RID) {
 						pos = i;
 					}
@@ -488,11 +502,11 @@ function run() {
 	var req = new Object();
 	req['user'] = "50329ad3ac6815bf24000001";
 	req['query'] = new Object();
-	req['query']['playlistID'] = "503adc14dd62abcf44000001";
-	req['query']['playlistName'] = 'dubai';
+	req['query']['playlistID'] = "503c3ea16754417367000001";
+	req['query']['playlistName'] = 'melbourne';
 	req['query']['newPlaylistName'] = 'kharkov';
 	req['query']['locationID'] = '7';
-	req['query']['RID'] = '45';
+	req['query']['RID'];
 	//addPlaylist(req);
 	//removePlaylist(req);
 	//renamePlaylist(req);

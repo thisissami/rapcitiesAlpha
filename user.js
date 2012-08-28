@@ -97,6 +97,7 @@ function writeCursor(res, cursor) {
   });
 }
 
+
 // creates a new playlist for a given user
 function addPlaylist(req, res, next) {
 	if(!req['user']) {
@@ -120,10 +121,13 @@ function addPlaylist(req, res, next) {
 		return;
 	}
 
+	var timestamp = new Date();
+
 	var playlist = {
 		'name': playlistName,
 		'owner': userID,
-		'videos': new Array()
+		'videos': new Array(),
+		'timestamp': timestamp
 	};
 	
 	// inserts a playlist into the playlists collection
@@ -132,9 +136,12 @@ function addPlaylist(req, res, next) {
 		playlists.insert(playlist, function(err, result) {
 			if(err) { writeError(res, err); return }
 
+			var playlistID = result[0]['_id'];
+
 			var playlistRef = {
 				'name': playlistName,
-				'_id': result[0]['_id']
+				'_id': playlistID,
+				'timestamp': timestamp
 			};
 
 			// update with reference to playlists in user doc
@@ -332,10 +339,14 @@ function getPlaylists(req, res, next) {
 
 		// contains _id of the favId
 		// contains Array of names and _ids of playlists
-		var favAndPlaylists = {
-			'favId': userDoc['favId'],
-			'playlists': userDoc['playlists']
-		};
+		var favAndPlaylists = new Object();
+		if(!userDoc['favId']) {
+			writeError(res, "favId field under user doc nonexistent"); return;	
+		}
+		favAndPlaylists['favId'] = userDoc['favId'];
+
+		if(userDoc['playlists'])
+			favAndPlaylists['playlists'] = userDoc['playlists'];
 		writeSuccess(res, favAndPlaylists);
 	});
 }
@@ -390,6 +401,8 @@ function addVideo(req, res, next) {
 	}
 	var playlistID = new ObjectID(query['playlistID']);
 
+	var timestamp = new Date();
+
 	// Object that stores video information
 	var video = new Object();
 
@@ -401,6 +414,8 @@ function addVideo(req, res, next) {
 	if(query['locTitle']) video['locTitle'] = query['locTitle'];
 	if(query['RID']) video['RID'] = query['RID'];
 	if(query['itemTitle']) video['itemTitle'] = query['itemTitle'];
+
+	video['timestamp'] = timestamp;
 
 	// doing it this way because permission to modify may extend to other users
 	/* not checking owner until playlist is retrieved, so permission policy
@@ -464,8 +479,7 @@ function removeVideo(req, res, next) {
 	}
 	var locationID = query['locationID'];
 
-	if(query['RID']) 
-		var RID = query['RID'];
+	if(query['RID']) var RID = query['RID'];
 
 	// doing it this way because permission to modify may extend to other users
 	/* not checking owner until playlist is retrieved, so permission policy
@@ -486,7 +500,7 @@ function removeVideo(req, res, next) {
 		var pos = -1;
 		for(var i = 0; i < videos.length; i++) {
 			if(videos[i]['locationID'] == locationID) {
-				if(RID) {
+				if(videos[i]['RID']) {
 					if(videos[i]['RID'] == RID) {
 						pos = i;
 					}
