@@ -1,4 +1,4 @@
-/* @pjs preload="http://localhost:8888/heartbasket.png, http://localhost:8888/wikibio.png, http://localhost:8888/exit.png, http://localhost:8888/heart.svg, http://localhost:8888/greyHeart.svg, http://localhost:8888/facebook,http://localhost:8888/miniNYC.png,http://localhost:8888/logo";*/
+/* @pjs preload="http://localhost:8888/heartbasket.png, http://localhost:8888/streetCoins.jpg, http://localhost:8888/wikibio.png, http://localhost:8888/exit.png, http://localhost:8888/heart.svg, http://localhost:8888/greyHeart.svg, http://localhost:8888/facebook,http://localhost:8888/miniNYC.png,http://localhost:8888/logo";*/
 
 //the above code is used by processingjs to preload images
 
@@ -65,6 +65,7 @@ void setup(){
 	}
 	user = new User(); // user object! holds the user data.
 	facebook = loadImage("http://localhost:8888/facebook");
+	streetCoins = loadImage("http://localhost:8888/heartbasket.png")
 	logout = loadImage("http://localhost:8888/exit.png");
 	heartBasket = loadImage("http://localhost:8888/heartbasket.png");
 	heart = loadShape("http://localhost:8888/heart.svg");
@@ -122,7 +123,7 @@ void setUpSize(width,height){
 }
 
 PShapeSVG heart,greyHeart;
-PImage facebook,heartBasket,logout,wikibio;
+PImage streetCoins,facebook,heartBasket,logout,wikibio;
 
 //draw all the various things that get displayed in the app
 void draw(){
@@ -132,7 +133,7 @@ void draw(){
 	if(curLoc > -1)//draw currently playing location
 		nyc.drawCurrentInfo();
 	sidePane.draw();// draw the sidepane!
-	if(location)  
+//	if(location)  
 		toolBox.draw();
 	current.draw();
 	if(hoverLoc > -1)
@@ -205,12 +206,25 @@ var icons = new HashMap(); //icon images that correspond to the various types
 //var media = {}; // what type of media does each type contain? (for now all youtube videos)
 var colors = {}; //color of each type (as shown on minimap and as displayed in hovertext)
 var locations = new ArrayList(); //list of all the locations
-
+boolean focused = true;
+void focus(){
+	focused = true;
+}
+void unfocus(){
+	focused = false;
+}
 /* class that deals with all the currently logged in user's information*/
 class User{
 	int streetCredit = 0; //total Street Credit available to this user
-	boolean exists = false; //is this a user that has registered with the site?
+	int curStreetCredit = 0; //street credit of current video
+	int curTimeTotal = 0; //time current video playing for so far
+	int curTime; //current time position
+	boolean exists = true; //is this a user that has registered with the site?
+	int unfocused = 0;// this is the counter for when site is blurred
 	var favorites; //will hold favorites playlist
+	var locID;
+	var locRID;
+	var favID;
 	HashMap playlists;
 	User(){
 		$.get('http://localhost:8888/user/getInfo', function(data) {
@@ -218,15 +232,68 @@ class User{
 				if(data.user){
 					exists = true;
 					if(data.streetCredit) streetCredit = data.streetCredit;
-					$.get('http://localhost:8888/user/getFavorites?type=JSON', function(data){
-						alert(data);//bo han
-					})
 					$.get('http://localhost:8888/user/getPlaylists', function(data){
-						alert(data);//bo han
-					})				
+						if(data && data.favID){
+							favID = data.favID;
+							//bo han - this is where you can edit code to try other playlists
+							//if you change favID to be any other playlistID, all the functions
+							//that you can test now with "favorites" you can test instead with
+							//any playlist of your choosing.
+						}
+					});				
 				}
 			}
         });
+	}
+	//
+	void setTimePos(int newTime){
+		if(curTime != newTime)
+			curTime = floor(newTime);
+		//console.log('cur: '+curTime+'  new: '+newTime);
+	}
+	void resetCurCount(){
+		if(locID){
+			var scData = {
+				_id:locID,
+				streetCreditTot:streetCredit,
+				streetCreditCur:curStreetCredit,
+				seconds:curTimeTotal
+			}
+			if(locRID) scData['RID'] = locRID;
+			$.ajax({//update street credit in database
+				url: "http://localhost:8888/user/scUpdate",
+				data: scData
+			});
+		}
+		curStreetCredit = 0;
+		curTime = 0;
+		locID = location._id;
+		if(location.list) locRID = location.list[playingVideo].RID;
+		else locRID = false;
+	}
+	//see if at new second - do things accordingly if that's the case
+	void setCurTime(int newTime){
+		//console.log('cur: '+curTime+'  new: '+newTime);
+		if(curTime != floor(newTime)){
+			curTime++;
+			curTimeTotal++;
+			var multiple = 1;
+			if(location.list && location.list[playingVideo].streetcred)
+				multiple = location.list[playingVideo].streetcred;
+			else if(location.streetcred)
+				multiple = location.streetcred;
+			if(!focused){
+				if(unfocused == 9){
+					unfocused = 0;
+				}
+				else{
+					unfocused++;
+					return;
+				}
+			}
+			curStreetCredit += multiple;
+			streetCredit += multiple;
+		}
 	}
 }
 
@@ -238,25 +305,28 @@ class Toolbox{
 	int FACEREC = 2;
 	int LOGOUT = 3;
 	int ARTBIO = 4;
-	
+	int STREETCRED = 5;
+	int streetCredSize; //x length of street credit numerals
+	int streetCredRight; //right most point of street credit numerals
 	Toolbox(){
 		overlay = false;
 		toolHover =  -1; //what tool is currently hovered over? -1 = none
 		toolTop = PANEMINY; //where is the menu displayed?
 		toolFull = 40; // size of one tool
 		toolHalf = toolFull/2; //half the size of a tool spot (for easy computation below)
-		toolWidth = 200; // size of all tools together
+		toolWidth = toolFull*6; // size of all tools together
 		toolLeft = width/2 - toolWidth/2; //left most part of the toolbar
 	}
 	
 	//draw the menu
 	void draw(){
-		fill(0); stroke(255);
+		fill(0); stroke(255); textSize(24);
 		rectMode(CORNERS);
-		rect(toolLeft, toolTop, toolLeft+toolWidth, toolTop+toolFull);
+		streetCredSize = textWidth(user.streetCredit);//compute size of street credits
+		rect(toolLeft, toolTop, toolLeft+toolWidth+streetCredSize, toolTop+toolFull);
 		
 		shapeMode(CENTER);
-		if(location.fav || (location.list && location.list[playingVideo].fav)) //draw either the unheart or heart icon
+		if(location && (location.fav || (location.list && location.list[playingVideo].fav))) //draw either the unheart or heart icon
 			shape(heart,toolLeft+toolHalf,toolTop+toolHalf,toolHalf+4, toolHalf+2);
 		else
 			shape(greyHeart,toolLeft+toolHalf,toolTop+toolHalf,toolHalf+4, toolHalf+2);
@@ -265,43 +335,54 @@ class Toolbox{
 		image(heartBasket,toolLeft+toolHalf*3,toolTop+toolHalf);
 		image(facebook, toolLeft+toolHalf*5, toolTop+toolHalf, toolFull -5, toolFull -5);
 		image(wikibio, toolLeft+toolHalf*7, toolTop+toolHalf);
-		image(logout, toolLeft+toolHalf*9, toolTop+toolHalf);
-		
+		image(streetCoins, toolLeft+toolHalf*9, toolTop+toolHalf);
+		fill(255); 
+		textAlign(LEFT,TOP);
+		text(user.streetCredit, toolLeft+toolHalf*10,toolTop+6);
+		streetCredRight = toolLeft+toolHalf*10+streetCredSize; // compute right side of street cred numbers
+		image(logout, streetCredRight+toolHalf, toolTop+toolHalf);
+
 		//see if any of the menu items are currently being hovered over by the mouse
 		//if so, draw the appropriate text info
-		if(mouseY>toolTop && mouseY<toolTop+toolFull&&mouseX>toolLeft&&mouseX<toolLeft+toolWidth){
+		if(mouseY>toolTop && mouseY<toolTop+toolFull&&mouseX>toolLeft&&mouseX<toolLeft+toolWidth+streetCredSize){
 			textSize(14); fill(0); stroke(255); rectMode(CORNERS);
 			if(mouseX<toolLeft+toolFull){//heart
 				var heartext;
-				if(location.fav || (location.list && location.list[playingVideo].fav)) heartext = "Un-Heart Song";
+				if(location && (location.fav || (location.list && location.list[playingVideo].fav))) heartext = "Un-Heart Song";
 				else heartext = "Heart Song";
-				rect(toolLeft, toolTop-5, toolLeft+textWidth(heartext)+4,toolTop-25);
+				rect(toolLeft, toolTop-5, toolLeft+textWidth(heartext)+8,toolTop-25);
 				fill(255);
-				text(heartext,toolLeft+2,toolTop-23);
+				text(heartext,toolLeft+4,toolTop-23);
 				toolHover = HEART;
 			}
 			else if(mouseX>toolLeft+toolFull && mouseX<toolLeft+toolFull*2){//basket
-				rect(toolLeft+toolFull, toolTop-5, toolLeft+toolFull+textWidth('View HeartBasket')+4,toolTop-25);
+				rect(toolLeft+toolFull, toolTop-5, toolLeft+toolFull+textWidth('View HeartBasket')+8,toolTop-25);
 				fill(255);
-				text('View HeartBasket',toolLeft+toolFull+2,toolTop-23);
+				text('View HeartBasket',toolLeft+toolFull+4,toolTop-23);
 				toolHover = BASKET;
 			}
 			else if(mouseX>toolLeft+toolFull*2&&mouseX<toolLeft+toolFull*3){//facebook
-				rect(toolLeft+toolFull*2, toolTop-5, toolLeft+toolFull*2+textWidth('Recommend Song on Facebook')+4,toolTop-25);
+				rect(toolLeft+toolFull*2, toolTop-5, toolLeft+toolFull*2+textWidth('Recommend Song on Facebook')+8,toolTop-25);
 				fill(255);
-				text('Recommend Song on Facebook',toolLeft+toolFull*2+2,toolTop-23);
+				text('Recommend Song on Facebook',toolLeft+toolFull*2+4,toolTop-23);
 				toolHover = FACEREC;
 			}
 			else if(mouseX>toolLeft+toolFull*3&&mouseX<toolLeft+toolFull*4){//wikibio
-				rect(toolLeft+toolFull*3, toolTop-5, toolLeft+toolFull*3+textWidth('Artist Biography')+4,toolTop-25);
+				rect(toolLeft+toolFull*3, toolTop-5, toolLeft+toolFull*3+textWidth('Artist Biography')+8,toolTop-25);
 				fill(255);
-				text('Artist Biography',toolLeft+toolFull*3+2,toolTop-23);
+				text('Artist Biography',toolLeft+toolFull*3+4,toolTop-23);
 				toolHover = ARTBIO;
 			}
-			else if(mouseX>toolLeft+toolFull*4&&mouseX<toolLeft+toolFull*5){//wikibio
-				rect(toolLeft+toolFull*4, toolTop-5, toolLeft+toolFull*4+textWidth('Logout')+4,toolTop-25);
+			else if(mouseX>toolLeft+toolFull*4&&mouseX<streetCredRight){//logout code
+				rect(toolLeft+toolFull*4, toolTop-5, toolLeft+toolFull*4+textWidth('Street Credit')+8,toolTop-25);
 				fill(255);
-				text('Logout',toolLeft+toolFull*4+2,toolTop-23);
+				text('Street Credit',toolLeft+toolFull*4+4,toolTop-23);
+				toolHover = STREETCRED;
+			}
+			else if(mouseX>streetCredRight&&mouseX<streetCredRight+toolFull){
+				rect(streetCredRight, toolTop-5, streetCredRight+textWidth('Logout')+8,toolTop-25);
+				fill(255);
+				text('Logout',streetCredRight+4,toolTop-23);
 				toolHover = LOGOUT;
 			}
 		}
@@ -310,28 +391,30 @@ class Toolbox{
 	
 	void mouseClicked(){
 		switch(toolHover){
-			case(HEART):break;
+			case(HEART):
+			console.log('do we even get here');
 				if(location.list){
+					console.log('hello');
 					if(location.list[playingVideo].fav){
-						$.get('http://localhost:8888/user/removeVideo', { "locationID": location._id, "RID":location.list[playingVideo].RID});
+						$.get('http://localhost:8888/user/removeVideo', { "locationID": location._id, "RID":location.list[playingVideo].RID, "playlistID":favID});
 						location.list[playingVideo].fav = false;
 					} //bo han
 					else{
-						$.get('http://localhost:8888/user/addVideo', { "locationID": location._id, "RID":location.list[playingVideo].RID});
+						$.get('http://localhost:8888/user/addVideo', { "locationID": location._id, "RID":location.list[playingVideo].RID, "playlistID":favID});
 						location.list[playingVideo].fav = true;
 					}
 				} else{
 					if(location.fav){
-						$.get('http://localhost:8888/user/removeVideo', { "locationID": location._id});
+						$.get('http://localhost:8888/user/removeVideo', { "locationID": location._id, "playlistID":favID});
 						location.fav = false;
 					} //bo han
 					else{
-						$.get('http://localhost:8888/user/addVideo', { "locationID": location._id});
+						$.get('http://localhost:8888/user/addVideo', { "locationID": location._id, "playlistID":favID});
 						location.fav = true;
 					}
 				}
 				break;
-			case(BASKET):break;
+			case(BASKET):
 				showFavorites();
 				break;
 			case(LOGOUT):
@@ -346,15 +429,14 @@ class Toolbox{
 	
 	// shows favorite box and loads the favorites
 	void showFavorites() {  
-		console.log('here');
 		if(overlay){
 			$('#overlay').dialog('close');
-			overlay = true;
+			overlay = false;
 		}
 		else{
           $.get('http://localhost:8888/user/getFavorites?type=HTML', function(data) {
 				$('#overlay').html(data).dialog('open'); //bo han
-				overlay = false;
+				//overlay = true;
           });
 		}
 	}
@@ -1274,8 +1356,7 @@ class Current{
     dragVol();
   }
 
-  void mouseReleased()
-  {
+  void mouseReleased(){
     play.mouseReleased();
     ffwd.mouseReleased();
     releaseSeekBar();
@@ -1440,7 +1521,8 @@ class Current{
 		  }
 		  else{
 			int seekPosition = (int)map(mouseX,seekLeft,seekRight, 0, player.getDuration());
-	          player.seekTo(seekPosition, true);
+	          user.setTimePos(seekPosition);//street credit stuff
+			  player.seekTo(seekPosition, true);
 			  if(!songPausedToBeginWith)
 	            player.playVideo();
 			} 
@@ -1530,6 +1612,7 @@ class Current{
 		else if(playMode == VIDEO){
 			total = player.getDuration();
 			totTime = makeTime(total);
+			user.setCurTime(player.getCurrentTime());
 			curTime = makeTime(player.getCurrentTime());
 	        x = map(player.getCurrentTime(), 0, total, seekLeft, seekRight);
 	        
@@ -1643,7 +1726,7 @@ void loadVideo(){
 	if(!playedSomething){
 		playedSomething = true;
 	}else if(!user.exists){
-		link('http://localhost:8888/logN');
+		link('http://localhost:8888/logN'); //ADD CODE FOR THIS TO RETURN TO THE SAME PLACE
 	}
    	if(location.list && location.list.length > 0){
 	    player.loadVideoById(location.list[playingVideo].ytid);
@@ -1662,7 +1745,9 @@ void loadVideo(){
 		//updateToolbox();
 	 //$("#ytplayer").html("<p>Couldn't find this song on YouTube</p>");
 	}
-	
+	if(user.exists){
+		user.resetCurCount();
+	}
 	/*check to see if currently loaded song is 
 	
 	

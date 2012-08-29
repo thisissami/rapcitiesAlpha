@@ -377,7 +377,91 @@ function getPlaylist(req, res, next) {
 		// if html specified, return html
 		// return json otherwise		
 		if(query['type'] == 'html') {
-			//TODO
+			var videos = playlist['videos'];
+			var sortBy = 'locTitle'; var order = 'asc';
+
+			// this could probably be simplified, especially the switch
+			writeHeader(res, "html");
+			var locTitleString = '\'location\'';
+			var itemTitleString = '\'item\'';
+			var dateString = '\'date\'';
+			var locTitleArrow = ''; var itemTitleArrow = ''; var dateArrow = '';
+			switch(sortBy) {
+				case 'locTitle':
+					if(order == 'asc') { 
+						locTitleString += ', \'desc\'';
+						locTitleArrow += ' &#x25B2;'; 
+					} else {
+						locTitleString += ', \'asc\'';
+						locTitleArrow += ' &#x25B2;'; 
+					}
+					break;
+				case 'itemTitle':
+					if(order == 'asc') { 
+						itemTitleString += ', \'desc\'';
+						itemTitleArrow += ' &#x25B2;'; 
+					} else {
+						itemTitleString += ', \'asc\'';
+						itemTitleArrow += ' &#x25B2;'; 
+					}
+					break;
+				case 'date':
+					if(order == 'asc') { 
+						dateString += ', \'desc\'';
+						dateArrow += ' &#x25B2;'; 
+					} else {
+						dateString += ', \'asc\'';
+						dateArrow += ' &#x25B2;'; 
+					}
+					break
+			}
+			var outHtml = '<table id="userFavs"><thead><tr><td></td>' +
+				'<td>'+
+					'<a href="javascript:void(0)" onclick="showAndFillOverlay('+
+					locTitleString+')">Location Title'+locTitleArrow+'</a>'+
+				'</td>'+
+				'<td>'+
+					'<a href="javascript:void(0)" onclick="showAndFillOverlay('+
+					itemTitleString+')">Item Title'+itemTitleArrow+'</a>'+
+				'</td>'+
+				'<td>'+
+					'<a href="javascript:void(0)" onclick="showAndFillOverlay('+
+					dateString+')">Date'+dateArrow+'</a>'+
+				'</td>'+
+				'</tr></thead><tbody>';
+			videos.sort(function(a, b) {
+				var out;
+				var compareA; var compareB;
+				switch(sortBy) {
+					case 'locTitle':
+					default:
+						compareA = a.locTitle; compareB = b.locTitle;
+						break;
+					case 'itemTitle':
+						compareA = a.itemTitle; compareB = b.itemTitle;
+						break;
+					case 'date':
+						compareA = a.date; compareB = b.date;
+						break;
+				}
+				if(compareA > compareB) out = 1;
+				else if(compareA < compareB) out = -1;
+				else out = 0;
+
+				if(order == 'asc') return out;
+				else return out * -1;
+			});
+			for(var i = 0; i < videos.length; i++) {
+				var video = videos[i];
+				outHtml += '<tr><td><a href="javascript:void(0)" onclick="toggleFav(this, \''+video['locationID']+'\',\''+video['RID']+'\',\''+playlistID+'\')"><img src="http://localhost:8888/heart.svg" width="20" height="20" border="0" /></a></td>';
+				outHtml += '<td><a href="javascript:void(0)" onclick="playVideo(\''+video['locationID']+'\',\''+video['RID']+'\')">' + video['locTitle'] + '</a></td>';
+				outHtml += '<td><a href="javascript:void(0)" onclick="playVideo(\''+video['locationID']+'\',\''+video['RID']+'\')">' + video['itemTitle'] + '</a></td>';
+				outHtml += '<td>' + (video['date'].getMonth()+1) + '/' + video['date'].getDate() + '/' + video['date'].getFullYear() + '</td>';
+				outHtml += '</tr>';	
+			}
+			outHtml += '</tbody></table>';
+			console.log(outHtml);
+			return;
 		}
 		writeSuccess(res, playlist);
 	});
@@ -524,284 +608,6 @@ function removeVideo(req, res, next) {
 	});	
 }
 
-function addSong(req, res, next) {
-  var query = getQueries(req);
-  
-  var userid = new ObjectID(req.user);
-  var songid = query.songid;
-  if(!songid) {
-    writeError(res, "no userid or songid");
-  } else {
-    usersCollection.findOne({'_id': userid}, function(err, document) {
-      if(err) {
-        console.log(err);
-        writeError(res);
-        return;
-      }
-      if(document) {
-        var favs = document.favs;
-        var dates = document.dates;
-        if(favs.indexOf(songid) != -1) {
-          writeError(res, "Already fav'd");
-        } else {
-          favs.push(songid);
-          dates.push(new Date());
-        }
-        usersCollection.update({'_id': userid}, {'$set': {'favs': favs, 'dates': dates}}, function(err, count) {
-          if(err) {
-            console.log(err);
-            writeError(res);
-            return;
-          }
-          writeSuccess(res);
-        });
-      } else {
-        writeError(res, "No such user");
-        return;
-      }
-    });
-    /*
-    songsCollection.findOne({'_id': songid, 'likers': userid}, function(err, document) {
-      if(err) {
-        console.log(err);
-        writeError(res);
-        return;
-      }
-      if(document) {
-        songsCollection.update({'_id': songid}, {'$pull': {'likers': userid}},
-          {'safe': true}, function(err, count) {
-            if(count == 1) writeSuccess(res, "liker removed from song");
-            else writeError(res, "count was " + count);
-          });
-      } else {
-        songsCollection.update({'_id': songid}, {'$push': {'likers': userid}},
-          {'safe': true}, function(err, count) {
-            if(count == 1) writeSuccess(res, "liker added to song");
-            else writeError(res, "count was " + count);
-          });
-      }
-    });*/
-  }
-}
-
-function removeSong(req, res, next) {
-  var query = getQueries(req);
-  
-  var userid = new ObjectID(req.user);
-  var songid = query.songid;
-  if(!songid) {
-    writeError(res, "no songid");
-  } else {
-    usersCollection.findOne({'_id': userid}, function(err, document) {
-      if(err) {
-        console.log(err);
-        writeError(res);
-        return;
-      }
-      if(document) {
-        var favs = document.favs;
-        var dates = document.dates;
-        var favIndex = favs.indexOf(songid);
-        if(favIndex == -1) {
-          writeError(res, "No such fav!");
-        } else {
-          favs.splice(favIndex, 1);
-          dates.splice(favIndex, 1);
-          usersCollection.update({'_id': userid}, {'$set': {'favs': favs, 'dates': dates}}, function(err, count) {
-            if(err) {
-              console.log(err);
-              writeError(res);
-              return;
-            }
-            writeSuccess(res);
-          });
-        }
-      } else {
-        writeError(res, "No such user");
-        return;
-      }
-    });
-  }
-}
-
-function isFav(req, res, next) {
-  var query = getQueries(req);
-  
-  var userid = new ObjectID(req.user);
-  var songid = query.songid;
-  if(!songid) {
-    writeError(res, "no userid or songid");
-  } else {
-    usersCollection.findOne({'_id': userid}, function(err, document) {
-      if(err) {
-        console.log(err);
-        writeError(res);
-        return;
-      }
-      if(document) {
-        if(document.favs.indexOf(songid) != -1) {
-          writeSuccess(res, 'true');
-        } else {
-          writeSuccess(res, 'false');
-        }
-      } else {
-        writeError(res, 'No such user');
-      }
-    });
-  }
-}
-
-function seeSongs(req, res, next) {
-  var userid = new ObjectID(req.user);
- /* var query = getQueries(req);
-  var page = query.page;
-  if(!page) page = 1;
-  var sortBy = query.sortBy;
-  if(!sortBy) sortBy = 'title';
-  var order = query.order;
-  if(!order) order = 'asc';*/
-  var page = 1;
-  var sortBy = 'title';
-  var order = 'asc';
-
-    usersCollection.findOne({'_id': userid}, function(err, document) {
-      if(err) {
-        console.log(err);
-        writeError(res);
-        return;
-      }
-      if(document) {
-        var documents = [], index = 0, favs = document.favs, dates = document.dates;
-console.log(favs);
-        // Tail-recursive loop to get past asynchronous querying:
-        var loopThrough = function() {
-          if(index < favs.length) {
-            fullid = favs[index].split(' ');
-            artists.findOne({'RID': fullid[0]}, function(err, document) {
-              if(document) {
-                var i, pos; 
-                for(i = 0; i < document.topTracks.length; i++){
-                  if(document.topTracks[i].RID == fullid[1]){
-                    pos = true;
-                    break;
-                  }
-                }
-                if(pos)
-                  documents.push({'artist':document.name,'song':document.topTracks[i].title,'date':dates[index],'fullid':favs[index]});
-                ++index;
-                loopThrough();
-              }
-            });
-          } else {
-            console.log("breaking out...found " + index);
-            // Breakout point of recursive loop
-            writeHeader(res, "html");
-            // do sorting options
-            var titleString = '\'song\'';
-            var artistString = '\'artist\'';
-            //var genreString = '\'song.genre\'';
-            var dateString = '\'date\'';
-            var titleArrow = '';
-            var artistArrow = '';
-            //var genreArrow = '';
-            var dateArrow = '';
-            if(sortBy == 'title') {
-              if(order == 'asc') {
-                titleString += ', \'desc\'';
-                titleArrow = ' &#x25B2;';
-              } else {
-                titleString += ', \'asc\'';
-                titleArrow = ' &#x25BC;';
-              }
-            } else if(sortBy == 'artist') {
-              if(order == 'asc') {
-                artistString += ', \'desc\'';
-                artistArrow = ' &#x25B2;';
-              } else {
-                artistString += ', \'asc\'';
-                artistArrow = ' &#x25BC;';
-              }
-            } /*else if(sortBy == 'song.genre') {
-              if(order == 'asc') {
-                genreString += ', \'desc\'';
-                genreArrow = ' &#x25B2;';
-              } else {
-                genreString += ', \'asc\'';
-                genreArrow = ' &#x25BC;';
-              }
-            }*/ else if(sortBy == 'date') {
-              if(order == 'asc') {
-                dateString += ', \'desc\'';
-                dateArrow = ' &#x25B2;';
-              } else {
-                dateString += ', \'asc\'';
-                dateArrow = ' &#x25BC;';
-              }
-            }
-            res.write('<table id="userFavs"><thead><tr><td></td>' +
-              '<td><a href="javascript:void(0)" onclick="showAndFillOverlay(' + titleString + ')">Title' + titleArrow + '</a></td>' +
-              '<td><a href="javascript:void(0)" onclick="showAndFillOverlay(' + artistString + ')">Artist' + artistArrow + '</a></td>' +
-              //'<td><a href="javascript:void(0)" onclick="showAndFillOverlay(' + genreString + ')">Genre' + genreArrow + '</a></td>' +
-              '<td><a href="javascript:void(0)" onclick="showAndFillOverlay(' + dateString + ')">Date' + dateArrow + '</a></td>' +
-              '</tr></thead><tbody>');
-            
-            documents.sort(function(a, b) {
-              var out;
-              switch(sortBy) {
-              case 'title':
-              default:
-                out = ((a.title == b.title) ? 0 : ((a.title > b.title) ? 1 : -1));
-                break;
-              case 'artist':
-                out = ((a.artist == b.artist) ? 0 : ((a.title > b.artist) ? 1 : -1));
-                break;
-              /*case 'song.genre':
-                out = ((a.song.genre == b.song.genre) ? 0 : ((a.song.title > b.song.genre) ? 1 : -1));
-                break;*/
-              case 'date':
-                out = ((a.date == b.date) ? 0 : ((a.date > b.date) ? 1 : -1));
-                break;
-              }
-              if(order == 'asc') return out;
-              return out * -1;
-            });
-            var d,j;
-            for(j=0; j<documents.length; j++) {
-              var d = documents[j];
-              res.write('<tr><td><a href="javascript:void(0)" onclick="toggleFav(this, \'' + d.fullid + '\')"><img src="http://localhost:8888/heart.svg" width="20" height="20" border="0" /></a></td>');
-              res.write('<td><a href="javascript:void(0)" onclick="playSong(0,\''+d.fullid+'\')">' + d.song + '</a></td>');
-              res.write('<td><a href="javascript:void(0)" onclick="playSong(1,\''+d.fullid+'\')">' + d.artist + '</a></td>');
-              //res.write('<td>' + d.song.genre + '</td>');
-              res.write('<td>' + (d.date.getMonth()+1) + '/' + d.date.getDate() + '/' + d.date.getFullYear() + '</td>');
-              res.write('</tr>');
-            }
-            res.end('</tbody></table>');
-          }
-        };
-        loopThrough();
-      } else {
-        writeError(res, "No such user");
-      }
-    });
-}
-
-function countSongs(req, res, next) {
-  var userid = new ObjectID(req.user);
-
-    usersCollection.findOne({'_id': userid}, function(err, document) {
-      if(err) {
-        console.log(err);
-        writeError(res);
-        return;
-      }
-      if(document) {
-        writeSuccess(res, document.favs.length);
-      } else {
-        writeError(res, "No such user!");
-      }
-    });
-}
-
 function fbCreate(fbData, callback) {
 	usersCollection.findOne({'fbid':fbData.fbid}, function(err, user){
 		if(err){
@@ -835,7 +641,7 @@ function fbCreate(fbData, callback) {
 							{'$set': {'favId': result[0]['_id']}}, 
 							function(err, count) {
 								if(err) { 
-									callback("update error usersCollection")};
+									callback("update error usersCollection");
 								}
 						
 								callback(null,records[0]._id);
@@ -848,10 +654,11 @@ function fbCreate(fbData, callback) {
 	});
 }
 
-exports.createPlaylist = createPlaylist;
-exports.addSong = addSong;
-exports.removeSong = removeSong;
-exports.seeSongs = seeSongs;
-exports.countSongs = countSongs;
-exports.isFav = isFav;
+exports.addPlaylist = addPlaylist;
+exports.removePlaylist = removePlaylist;
+exports.renamePlaylist = renamePlaylist;
+exports.getPlaylist = getPlaylist;
+exports.getPlaylists = getPlaylists;
+exports.addVideo = addVideo;
+exports.removeVideo = removeVideo;
 exports.fbCreate = fbCreate;

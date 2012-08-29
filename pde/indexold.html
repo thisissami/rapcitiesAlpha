@@ -285,21 +285,19 @@
         });
       });
       
-	function toggleFav(element, id, userid) { //toggle favs
+	function toggleFav(element, loc, sub, playlist) { //toggle favs
           if(($(element).html().indexOf("greyHeart") > -1)) { // simulate xor with rev to reverse value
             $(element).html("<img src=\"http://localhost:8888/heart.svg\" width=\"20\" height=\"20\" border=\"0\" /\>");
-            $.get('http://localhost:8888/addSong', { "songid": id, "userid": userid });
+           	$.get('http://localhost:8888/user/addVideo', { "locationID": loc, "RID":sub, "playlistID":playlist});
           } else {
             $(element).html("<img src=\"http://localhost:8888/greyHeart.svg\" width=\"20\" height=\"20\" border=\"0\" /\>");
-            $.get('http://localhost:8888/removeSong', { "songid": id, "userid": userid });
+            $.get('http://localhost:8888/user/removeVideo', { "locationID": loc, "RID":sub, "playlistID":playlist});
           }
       }
             
-      function playSong(artist, fullid){
-        var splitid = fullid.split(' ');
+      function playVideo(loc, sub){
         var p = Processing.getInstanceById('canvas');
-        if(artist) p.playSong(splitid[0],0);
-        else p.playSong(splitid[0],splitid[1]);
+		p.playVideo(loc, sub);
       }
       
       function updatePageInfo(songid, artistid, songName, artistName) {   // updates toolbox
@@ -381,6 +379,15 @@
 			$("body").css("overflow","hidden");
 			$("#parent").css("width",$(window).width()).css("height",$(window).height());
 		}
+	});
+	
+	$(window).focus(function(){
+		var p = Processing.getInstanceById('canvas');
+		p.focus();
+	});
+	$(window).blur(function(){
+		var p = Processing.getInstanceById('canvas');
+		p.unfocus();
 	});
 	</script>
   </head>

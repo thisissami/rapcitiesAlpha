@@ -95,13 +95,13 @@ function addPlaylist(req, res, next) {
 		return;
 	}
 
-	var timestamp = new Date();
+	var date = new Date();
 
 	var playlist = {
 		'name': playlistName,
 		'owner': userID,
 		'videos': new Array(),
-		'timestamp': timestamp
+		'date': date
 	};
 	
 	// inserts a playlist into the playlists collection
@@ -115,7 +115,7 @@ function addPlaylist(req, res, next) {
 			var playlistRef = {
 				'name': playlistName,
 				'_id': playlistID,
-				'timestamp': timestamp
+				'date': date
 			};
 
 			// update with reference to playlists in user doc
@@ -351,7 +351,91 @@ function getPlaylist(req, res, next) {
 		// if html specified, return html
 		// return json otherwise		
 		if(query['type'] == 'html') {
-			//TODO
+			var videos = playlist['videos'];
+			var sortBy = 'locTitle'; var order = 'asc';
+
+			// this could probably be simplified, especially the switch
+			writeHeader(res, "html");
+			var locTitleString = '\'location\'';
+			var itemTitleString = '\'item\'';
+			var dateString = '\'date\'';
+			var locTitleArrow = ''; var itemTitleArrow = ''; var dateArrow = '';
+			switch(sortBy) {
+				case 'locTitle':
+					if(order == 'asc') { 
+						locTitleString += ', \'desc\'';
+						locTitleArrow += ' &#x25B2;'; 
+					} else {
+						locTitleString += ', \'asc\'';
+						locTitleArrow += ' &#x25B2;'; 
+					}
+					break;
+				case 'itemTitle':
+					if(order == 'asc') { 
+						itemTitleString += ', \'desc\'';
+						itemTitleArrow += ' &#x25B2;'; 
+					} else {
+						itemTitleString += ', \'asc\'';
+						itemTitleArrow += ' &#x25B2;'; 
+					}
+					break;
+				case 'date':
+					if(order == 'asc') { 
+						dateString += ', \'desc\'';
+						dateArrow += ' &#x25B2;'; 
+					} else {
+						dateString += ', \'asc\'';
+						dateArrow += ' &#x25B2;'; 
+					}
+					break
+			}
+			var outHtml = '<table id="userFavs"><thead><tr><td></td>' +
+				'<td>'+
+					'<a href="javascript:void(0)" onclick="showAndFillOverlay('+
+					locTitleString+')">Location Title'+locTitleArrow+'</a>'+
+				'</td>'+
+				'<td>'+
+					'<a href="javascript:void(0)" onclick="showAndFillOverlay('+
+					itemTitleString+')">Item Title'+itemTitleArrow+'</a>'+
+				'</td>'+
+				'<td>'+
+					'<a href="javascript:void(0)" onclick="showAndFillOverlay('+
+					dateString+')">Date'+dateArrow+'</a>'+
+				'</td>'+
+				'</tr></thead><tbody>';
+			videos.sort(function(a, b) {
+				var out;
+				var compareA; var compareB;
+				switch(sortBy) {
+					case 'locTitle':
+					default:
+						compareA = a.locTitle; compareB = b.locTitle;
+						break;
+					case 'itemTitle':
+						compareA = a.itemTitle; compareB = b.itemTitle;
+						break;
+					case 'date':
+						compareA = a.date; compareB = b.date;
+						break;
+				}
+				if(compareA > compareB) out = 1;
+				else if(compareA < compareB) out = -1;
+				else out = 0;
+
+				if(order == 'asc') return out;
+				else return out * -1;
+			});
+			for(var i = 0; i < videos.length; i++) {
+				var video = videos[i];
+				outHtml += '<tr><td><a href="javascript:void(0)" onclick="toggleFav(this, \''+video['locationID']+'\',\''+video['RID']+'\',\''+playlistID+'\')"><img src="http://localhost:8888/heart.svg" width="20" height="20" border="0" /></a></td>';
+				outHtml += '<td><a href="javascript:void(0)" onclick="playVideo(\''+video['locationID']+'\',\''+video['RID']+'\')">' + video['locTitle'] + '</a></td>';
+				outHtml += '<td><a href="javascript:void(0)" onclick="playVideo(\''+video['locationID']+'\',\''+video['RID']+'\')">' + video['itemTitle'] + '</a></td>';
+				outHtml += '<td>' + (video['date'].getMonth()+1) + '/' + video['date'].getDate() + '/' + video['date'].getFullYear() + '</td>');
+				outHtml += '</tr>';	
+			}
+			outHtml += '</tbody></table>';
+			console.log(outHtml);
+			return;
 		}
 		writeSuccess(res, playlist);
 	});
@@ -359,6 +443,7 @@ function getPlaylist(req, res, next) {
 
 // adds a video to a given playlist, user needs to own the playlist, for now
 function addVideo(req, res, next) {
+	console.log("SUCCESS!!!!!");
 	if(!req['user']) {
 		writeError(res, "req['user'] doesn't exist"); return;
 	}
@@ -375,7 +460,7 @@ function addVideo(req, res, next) {
 	}
 	var playlistID = new ObjectID(query['playlistID']);
 
-	var timestamp = new Date();
+	var date = new Date();
 
 	// Object that stores video information
 	var video = new Object();
@@ -385,11 +470,22 @@ function addVideo(req, res, next) {
 	}
 	video['locationID'] = query['locationID'];
 
-	if(query['locTitle']) video['locTitle'] = query['locTitle'];
-	if(query['RID']) video['RID'] = query['RID'];
-	if(query['itemTitle']) video['itemTitle'] = query['itemTitle'];
+	if(!query['locTitle']) {
+		writeError(res, "query['locTitle'] doesn't exist"); return;
+	}
+	video['locTitle'] = query['locTitle'];
 
-	video['timestamp'] = timestamp;
+	if(query['RID']) video['RID'] = query['RID'];
+
+	if(video['RID']) {
+		if(!query['itemTitle']) {
+			writeError(res, "query['itemTitle'] doesn't exist"); return;
+		} else {
+			video['itemTitle'] = query['itemTitle'];
+		}
+	}
+
+	video['date'] = date;
 
 	// doing it this way because permission to modify may extend to other users
 	/* not checking owner until playlist is retrieved, so permission policy
@@ -406,6 +502,7 @@ function addVideo(req, res, next) {
 				"user "+userID+" not allowed to modify "+playlistID); return;
 		}
 		var videos = playlistDoc['videos'];
+		if(!videos) videos = new Array();
 		// check if video already contained in the playlist
 		for(var i = 0; i < videos.length; i++) {
 			if(videos[i]['locationID'] == video['locationID']) {
@@ -502,18 +599,21 @@ function run() {
 	var req = new Object();
 	req['user'] = "50329ad3ac6815bf24000001";
 	req['query'] = new Object();
-	req['query']['playlistID'] = "503c3ea16754417367000001";
+	req['query']['playlistID'] = "503d4e1c91b354bf07000001";
 	req['query']['playlistName'] = 'melbourne';
 	req['query']['newPlaylistName'] = 'kharkov';
-	req['query']['locationID'] = '7';
-	req['query']['RID'];
+	req['query']['locationID'] = '2';
+	req['query']['locTitle'] = "Two";
+	req['query']['RID'] = '1';
+	req['query']['itemTitle'] = 'One';
+	req['query']['type'] = 'html';
 	//addPlaylist(req);
 	//removePlaylist(req);
 	//renamePlaylist(req);
 	//usersCollection.update({'name': 'Bo Ning Han'}, {'$set': {'favId': new ObjectID("503aaebcb631338a45000001")}});
 	//getPlaylists(req);
 	//getPlaylist(req);
-	//addVideo(req);
-	removeVideo(req);
+	addVideo(req);
+	//removeVideo(req);
 }
 
