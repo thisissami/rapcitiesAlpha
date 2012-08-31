@@ -1,4 +1,4 @@
-/* @pjs preload="http://localhost:8888/heartbasket.png, http://localhost:8888/streetCoins.jpg, http://localhost:8888/wikibio.png, http://localhost:8888/exit.png, http://localhost:8888/heart.svg, http://localhost:8888/greyHeart.svg, http://localhost:8888/facebook,http://localhost:8888/miniNYC.png,http://localhost:8888/logo";*/
+/* @pjs preload="http://localhost:8888/heartbasket.png, http://localhost:8888/wikibio.png, http://localhost:8888/exit.png, http://localhost:8888/heart.svg, http://localhost:8888/greyHeart.svg, http://localhost:8888/facebook,http://localhost:8888/miniNYC.png,http://localhost:8888/logo";*/
 
 //the above code is used by processingjs to preload images
 
@@ -227,21 +227,21 @@ class User{
 	var favID;
 	HashMap playlists;
 	User(){
-		$.get('http://localhost:8888/user/getInfo', function(data) {
-        	if(data){
-				if(data.user){
-					exists = true;
-					if(data.streetCredit) streetCredit = data.streetCredit;
-					$.get('http://localhost:8888/user/getPlaylists', function(data){
-						if(data && data.favID){
-							favID = data.favID;
-							//bo han - this is where you can edit code to try other playlists
-							//if you change favID to be any other playlistID, all the functions
-							//that you can test now with "favorites" you can test instead with
-							//any playlist of your choosing.
-						}
-					});				
+		$.get("http://localhost:8888/user/getInfo", function(data) {
+        	if(data.success && data.exists){
+				exists = true;
+				if(data.streetCredit) {
+					streetCredit = data.streetCredit;
 				}
+				$.get("http://localhost:8888/user/getPlaylists", function(data){
+					if(data.success){
+						favID = data.favId;
+						//bo han - this is where you can edit code to try other playlists
+						//if you change favID to be any other playlistID, all the functions
+						//that you can test now with "favorites" you can test instead with
+						//any playlist of your choosing.
+					}
+				});
 			}
         });
 	}
@@ -392,24 +392,44 @@ class Toolbox{
 	void mouseClicked(){
 		switch(toolHover){
 			case(HEART):
-			console.log('do we even get here');
+			console.log(location);
 				if(location.list){
-					console.log('hello');
 					if(location.list[playingVideo].fav){
-						$.get('http://localhost:8888/user/removeVideo', { "locationID": location._id, "RID":location.list[playingVideo].RID, "playlistID":favID});
+						$.get('http://localhost:8888/user/removeVideo', 
+						{ 
+							"locationID": location._id,
+							"RID":location.list[playingVideo].RID,
+							"playlistID":user.favID
+						});
 						location.list[playingVideo].fav = false;
 					} //bo han
 					else{
-						$.get('http://localhost:8888/user/addVideo', { "locationID": location._id, "RID":location.list[playingVideo].RID, "playlistID":favID});
+						$.get('http://localhost:8888/user/addVideo', 
+						{
+							"locationID": location._id,
+							"locTitle": location.title,
+							"RID":location.list[playingVideo].RID,
+							"itemTitle": location.list[playingVideo].title,
+							"playlistID":user.favID
+						});
 						location.list[playingVideo].fav = true;
 					}
 				} else{
 					if(location.fav){
-						$.get('http://localhost:8888/user/removeVideo', { "locationID": location._id, "playlistID":favID});
+						$.get('http://localhost:8888/user/removeVideo', 
+						{ 
+							"locationID": location._id,
+							"playlistID":user.favID
+						});
 						location.fav = false;
 					} //bo han
 					else{
-						$.get('http://localhost:8888/user/addVideo', { "locationID": location._id, "playlistID":favID});
+						$.get('http://localhost:8888/user/addVideo', 
+						{ 
+							"locationID": location._id,
+							"locTitle": location.title,
+							"playlistID":user.favID
+						});
 						location.fav = true;
 					}
 				}
@@ -434,11 +454,107 @@ class Toolbox{
 			overlay = false;
 		}
 		else{
-          $.get('http://localhost:8888/user/getFavorites?type=HTML', function(data) {
-				$('#overlay').html(data).dialog('open'); //bo han
-				//overlay = true;
-          });
+			$.get('http://localhost:8888/user/getPlaylist', 
+				{
+					'playlistID': user.favID
+				}, 
+				function(data) {
+					$('#overlay').html(generateHTML(data['videos'])).dialog('open'); //bo han
+					overlay = true;
+				}
+			);
 		}
+	}
+	
+	void generateHTML(videos) {
+		var sortBy = 'locTitle'; var order = 'asc';
+
+		var locTitleString = '\'location\'';
+		var itemTitleString = '\'item\'';
+		var dateString = '\'date\'';
+		var locTitleArrow = ''; 
+		var itemTitleArrow = ''; 
+		var dateArrow = '';
+
+		switch(sortBy) {
+			case 'locTitle':
+				if(order == 'asc') { 
+					locTitleString += ', \'desc\'';
+					locTitleArrow += ' &#x25B2;'; 
+				} else {
+					locTitleString += ', \'asc\'';
+					locTitleArrow += ' &#x25B2;'; 
+				}
+				break;
+			case 'itemTitle':
+				if(order == 'asc') { 
+					itemTitleString += ', \'desc\'';
+					itemTitleArrow += ' &#x25B2;'; 
+				} else {
+					itemTitleString += ', \'asc\'';
+					itemTitleArrow += ' &#x25B2;'; 
+				}
+				break;
+			case 'date':
+				if(order == 'asc') { 
+					dateString += ', \'desc\'';
+					dateArrow += ' &#x25B2;'; 
+				} else {
+					dateString += ', \'asc\'';
+					dateArrow += ' &#x25B2;'; 
+				}
+				break;
+		}
+		var outHtml = '<table id="userFavs"><thead><tr><td></td>'+
+			'<td>'+
+				'<a href="javascript:void(0)" onclick="showAndFillOverlay('+
+				locTitleString+')">Location Title'+locTitleArrow+'</a>'+
+			'</td>'+
+			'<td>'+
+				'<a href="javascript:void(0)" onclick="showAndFillOverlay('+
+				itemTitleString+')">Item Title'+itemTitleArrow+'</a>'+
+			'</td>'+
+			'<td>'+
+				'<a href="javascript:void(0)" onclick="showAndFillOverlay('+
+				dateString+')">Date'+dateArrow+'</a>'+
+			'</td>'+
+			'</tr></thead><tbody>';
+		videos.sort(function(a, b) {
+			var out;
+			var compareA; var compareB;
+			switch(sortBy) {
+				case 'locTitle':
+				default:
+					compareA = a.locTitle; compareB = b.locTitle;
+					break;
+				case 'itemTitle':
+					compareA = a.itemTitle; compareB = b.itemTitle;
+					break;
+				case 'date':
+					compareA = a.date; compareB = b.date;
+					break;
+			}
+			if(compareA > compareB) out = 1;
+			else if(compareA < compareB) out = -1;
+			else out = 0;
+
+			if(order == 'asc') return out;
+			else return out * -1;
+		});
+		for(var i = 0; i < videos.length; i++) {
+			var video = videos[i];
+			var date = new Date(video['date']);
+			var month = date.getMonth() + 1; 
+			var day = date.getDate();
+			var year = date.getFullYear();
+			outHtml += '<tr><td><a href="javascript:void(0)" onclick="toggleFav(this, \''+video['locationID']+'\',\''+video['RID']+'\',\''+user.favID+'\')"><img src="http://localhost:8888/heart.svg" width="20" height="20" border="0" /></a></td>';
+			outHtml += '<td><a href="javascript:void(0)" onclick="playVideo(\''+video['locationID']+'\')">' + video['locTitle'] + '</a></td>';
+			outHtml += '<td><a href="javascript:void(0)" onclick="playVideo(\''+video['locationID']+'\',\''+video['RID']+'\')">' + video['itemTitle'] + '</a></td>';
+			outHtml += '<td>' + month + "/" + day + "/" + year + '</td>';
+			outHtml += '</tr>';	
+		}
+		outHtml += '</tbody></table>';
+		return outHtml;
 	}
 }
 

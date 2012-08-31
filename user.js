@@ -72,17 +72,18 @@ function writeHeader(res, type) {
 function writeError(res, value) {
   writeHeader(res, "json");
   if(value != null)
-    res.end('{"response": "error", "value": ' + value + '}');
+    res.end('{"success":'+ false +', "value": ' + value + '}');
   else
-    res.end('{"response": "error"}');
+    res.end('{"success": '+ false +'}');
 }
 
 function writeSuccess(res, value) {
-  writeHeader(res, "json");
-  if(value != null)
-    res.end('{"response": "success", "value": ' + value + '}');
-  else
-    res.end('{"response": "success"}');
+	if(!value)
+		value = new Object();
+	value["success"] = true;
+
+	res.writeHead(200, {'Content-Type': 'application/json'});
+	res.end(JSON.stringify(value));
 }
 
 function writeCursor(res, cursor) {
@@ -96,7 +97,6 @@ function writeCursor(res, cursor) {
     res.end(JSON.stringify(docs));
   });
 }
-
 
 // creates a new playlist for a given user
 function addPlaylist(req, res, next) {
@@ -121,13 +121,13 @@ function addPlaylist(req, res, next) {
 		return;
 	}
 
-	var timestamp = new Date();
+	var date = new Date();
 
 	var playlist = {
 		'name': playlistName,
 		'owner': userID,
 		'videos': new Array(),
-		'timestamp': timestamp
+		'date': date
 	};
 	
 	// inserts a playlist into the playlists collection
@@ -141,7 +141,7 @@ function addPlaylist(req, res, next) {
 			var playlistRef = {
 				'name': playlistName,
 				'_id': playlistID,
-				'timestamp': timestamp
+				'date': date
 			};
 
 			// update with reference to playlists in user doc
@@ -332,22 +332,21 @@ function getPlaylists(req, res, next) {
 	if(!userID) { writeError(res, "userID creation error"); return;}
 
 	usersCollection.findOne({'_id': userID}, function(err, userDoc){
+		console.log(userDoc);
 		if(err) { writeError(res, err); return; }
 		if(!userDoc) { 
 			writeError(res, "user doesn't exist in system"); return; 
 		}
 
-		// contains _id of the favId
-		// contains Array of names and _ids of playlists
-		var favAndPlaylists = new Object();
 		if(!userDoc['favId']) {
 			writeError(res, "favId field under user doc nonexistent"); return;	
 		}
-		favAndPlaylists['favId'] = userDoc['favId'];
 
-		if(userDoc['playlists'])
-			favAndPlaylists['playlists'] = userDoc['playlists'];
-		writeSuccess(res, favAndPlaylists);
+		writeSuccess(res, {
+			'success': true,
+			'favId': userDoc['favId'], 
+			'playlists': userDoc['playlists']
+		});
 	});
 }
 
@@ -413,7 +412,7 @@ function getPlaylist(req, res, next) {
 						dateString += ', \'asc\'';
 						dateArrow += ' &#x25B2;'; 
 					}
-					break
+					break;
 			}
 			var outHtml = '<table id="userFavs"><thead><tr><td></td>' +
 				'<td>'+
@@ -469,6 +468,7 @@ function getPlaylist(req, res, next) {
 
 // adds a video to a given playlist, user needs to own the playlist, for now
 function addVideo(req, res, next) {
+	console.log(req);
 	if(!req['user']) {
 		writeError(res, "req['user'] doesn't exist"); return;
 	}
@@ -485,7 +485,7 @@ function addVideo(req, res, next) {
 	}
 	var playlistID = new ObjectID(query['playlistID']);
 
-	var timestamp = new Date();
+	var date = new Date();
 
 	// Object that stores video information
 	var video = new Object();
@@ -495,11 +495,22 @@ function addVideo(req, res, next) {
 	}
 	video['locationID'] = query['locationID'];
 
-	if(query['locTitle']) video['locTitle'] = query['locTitle'];
-	if(query['RID']) video['RID'] = query['RID'];
-	if(query['itemTitle']) video['itemTitle'] = query['itemTitle'];
+	if(!query['locTitle']) {
+		writeError(res, "query['locTitle'] doesn't exist"); return;
+	}
+	video['locTitle'] = query['locTitle'];
 
-	video['timestamp'] = timestamp;
+	if(query['RID']) video['RID'] = query['RID'];
+
+	if(video['RID']) {
+		if(!query['itemTitle']) {
+			writeError(res, "query['itemTitle'] doesn't exist"); return;
+		} else {
+			video['itemTitle'] = query['itemTitle'];
+		}
+	}
+
+	video['date'] = date;
 
 	// doing it this way because permission to modify may extend to other users
 	/* not checking owner until playlist is retrieved, so permission policy
@@ -516,6 +527,7 @@ function addVideo(req, res, next) {
 				"user "+userID+" not allowed to modify "+playlistID); return;
 		}
 		var videos = playlistDoc['videos'];
+		if(!videos) videos = new Array();
 		// check if video already contained in the playlist
 		for(var i = 0; i < videos.length; i++) {
 			if(videos[i]['locationID'] == video['locationID']) {
@@ -540,8 +552,9 @@ function addVideo(req, res, next) {
 	});
 }
 
-// removes a video to a given playlist, user needs to own the playlist, for now
+// removes video from given playlist, user needs to own playlist, for now
 function removeVideo(req, res, next) {
+	console.log(req);
 	if(!req['user']) {
 		writeError(res, "req['user'] doesn't exist"); return;
 	}
@@ -630,7 +643,8 @@ function fbCreate(fbData, callback) {
 					var favorites = {
 						'name': "Favorites",
 						'owner': records[0]['_id'],
-						'videos': new Array()
+						'videos': new Array(),
+						'date': new Date()
 					};
 					playlists.insert(favorites, function(err, result) {
 						if(err) { callback("insertion error playlists"); }
@@ -654,6 +668,24 @@ function fbCreate(fbData, callback) {
 	});
 }
 
+function getInfo(req, res){
+	if(req.user){
+		usersCollection.findOne({_id:new ObjectID(req.user)}, function(err, user) {
+			if(err) {
+				writeError(res,'no such user!');
+			}
+			else if(user){
+				res.writeHead(200, {'Content-Type': 'application/json'});
+				var sc = user.streetCredit;
+				if(!sc) sc = 0;
+				var returned = {'success':true,'exists':true,'streetCredit':sc};
+				res.end(JSON.stringify(returned));
+			}    
+		});
+	}
+}
+
+exports.getInfo = getInfo;
 exports.addPlaylist = addPlaylist;
 exports.removePlaylist = removePlaylist;
 exports.renamePlaylist = renamePlaylist;

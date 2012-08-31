@@ -76,12 +76,14 @@ passport.use(new fpass({
       case '/getEvents': console.log('OH SHIT GETTING AN EVENT!!!!'); uploader.getEvents(res, parsed.query); break;*/
 	  //case '/getArtistInfo': artistInfo.get(res, parsed.query); break;
 	  //case '/getBio': artistInfo.getBio(res, parsed.query); break;
-		case 'addPlaylist': users.addPlaylist(req, res, next); break;
-		case 'removePlaylist': users.removePlaylist(req, res, next); break;
-		case 'renamePlaylist': users.renamePlaylist(req, res, next); break;
-		case 'getPlaylist': users.getPlaylist(req, res, next); break;
-		case 'getPlaylists': users.getPlaylists(req, res, next); break;
-		case 'addVideo': users.removePlaylist(req, res, next); break;
+		case '/user/addPlaylist': users.addPlaylist(req, res, next); break;
+		case '/user/removePlaylist': users.removePlaylist(req, res, next); break;
+		case '/user/renamePlaylist': users.renamePlaylist(req, res, next); break;
+		case '/user/getPlaylist': users.getPlaylist(req, res, next); break;
+		case '/user/getPlaylists': users.getPlaylists(req, res, next); break;
+		case '/user/addVideo': users.addVideo(req, res, next); break;
+		case '/user/removeVideo': users.removeVideo(req, res, next); break;
+		case '/user/getInfo': users.getInfo(req, res); break;
       case '/seeSongs': users.seeSongs(req, res, next); break;
       case '/addSong': users.addSong(req, res, next); break;
       case '/removeSong': users.removeSong(req, res, next); break;
