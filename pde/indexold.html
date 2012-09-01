@@ -285,6 +285,11 @@
         });
       });
       
+	function showAndFillOverlay(sortBy, ascending, favID) {
+        var p = Processing.getInstanceById('canvas');
+		p.showFavorites(sortBy, ascending);
+	}
+
 	function toggleFav(element, loc, sub, playlist) { //toggle favs
           if(($(element).html().indexOf("greyHeart") > -1)) { // simulate xor with rev to reverse value
             $(element).html("<img src=\"http://localhost:8888/heart.svg\" width=\"20\" height=\"20\" border=\"0\" /\>");

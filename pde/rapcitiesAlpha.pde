@@ -435,7 +435,7 @@ class Toolbox{
 				}
 				break;
 			case(BASKET):
-				showFavorites();
+				showFavorites('locTitle', true);
 				break;
 			case(LOGOUT):
 				link('http://localhost:8888/logout');
@@ -445,116 +445,6 @@ class Toolbox{
 				showBio();
 				break;
 		}
-	}
-	
-	// shows favorite box and loads the favorites
-	void showFavorites() {  
-		if(overlay){
-			$('#overlay').dialog('close');
-			overlay = false;
-		}
-		else{
-			$.get('http://localhost:8888/user/getPlaylist', 
-				{
-					'playlistID': user.favID
-				}, 
-				function(data) {
-					$('#overlay').html(generateHTML(data['videos'])).dialog('open'); //bo han
-					overlay = true;
-				}
-			);
-		}
-	}
-	
-	void generateHTML(videos) {
-		var sortBy = 'locTitle'; var order = 'asc';
-
-		var locTitleString = '\'location\'';
-		var itemTitleString = '\'item\'';
-		var dateString = '\'date\'';
-		var locTitleArrow = ''; 
-		var itemTitleArrow = ''; 
-		var dateArrow = '';
-
-		switch(sortBy) {
-			case 'locTitle':
-				if(order == 'asc') { 
-					locTitleString += ', \'desc\'';
-					locTitleArrow += ' &#x25B2;'; 
-				} else {
-					locTitleString += ', \'asc\'';
-					locTitleArrow += ' &#x25B2;'; 
-				}
-				break;
-			case 'itemTitle':
-				if(order == 'asc') { 
-					itemTitleString += ', \'desc\'';
-					itemTitleArrow += ' &#x25B2;'; 
-				} else {
-					itemTitleString += ', \'asc\'';
-					itemTitleArrow += ' &#x25B2;'; 
-				}
-				break;
-			case 'date':
-				if(order == 'asc') { 
-					dateString += ', \'desc\'';
-					dateArrow += ' &#x25B2;'; 
-				} else {
-					dateString += ', \'asc\'';
-					dateArrow += ' &#x25B2;'; 
-				}
-				break;
-		}
-		var outHtml = '<table id="userFavs"><thead><tr><td></td>'+
-			'<td>'+
-				'<a href="javascript:void(0)" onclick="showAndFillOverlay('+
-				locTitleString+')">Location Title'+locTitleArrow+'</a>'+
-			'</td>'+
-			'<td>'+
-				'<a href="javascript:void(0)" onclick="showAndFillOverlay('+
-				itemTitleString+')">Item Title'+itemTitleArrow+'</a>'+
-			'</td>'+
-			'<td>'+
-				'<a href="javascript:void(0)" onclick="showAndFillOverlay('+
-				dateString+')">Date'+dateArrow+'</a>'+
-			'</td>'+
-			'</tr></thead><tbody>';
-		videos.sort(function(a, b) {
-			var out;
-			var compareA; var compareB;
-			switch(sortBy) {
-				case 'locTitle':
-				default:
-					compareA = a.locTitle; compareB = b.locTitle;
-					break;
-				case 'itemTitle':
-					compareA = a.itemTitle; compareB = b.itemTitle;
-					break;
-				case 'date':
-					compareA = a.date; compareB = b.date;
-					break;
-			}
-			if(compareA > compareB) out = 1;
-			else if(compareA < compareB) out = -1;
-			else out = 0;
-
-			if(order == 'asc') return out;
-			else return out * -1;
-		});
-		for(var i = 0; i < videos.length; i++) {
-			var video = videos[i];
-			var date = new Date(video['date']);
-			var month = date.getMonth() + 1; 
-			var day = date.getDate();
-			var year = date.getFullYear();
-			outHtml += '<tr><td><a href="javascript:void(0)" onclick="toggleFav(this, \''+video['locationID']+'\',\''+video['RID']+'\',\''+user.favID+'\')"><img src="http://localhost:8888/heart.svg" width="20" height="20" border="0" /></a></td>';
-			outHtml += '<td><a href="javascript:void(0)" onclick="playVideo(\''+video['locationID']+'\')">' + video['locTitle'] + '</a></td>';
-			outHtml += '<td><a href="javascript:void(0)" onclick="playVideo(\''+video['locationID']+'\',\''+video['RID']+'\')">' + video['itemTitle'] + '</a></td>';
-			outHtml += '<td>' + month + "/" + day + "/" + year + '</td>';
-			outHtml += '</tr>';	
-		}
-		outHtml += '</tbody></table>';
-		return outHtml;
 	}
 }
 
@@ -1877,6 +1767,78 @@ void loadVideo(){
 	
 	in favorites list or not
 	*/
+}
+
+// MOVED OUTSIDE OF TOOLBOX TO BE ACCESSIBLE FROM the html, can't figure out how to call p.Toolbox.showFavorites
+// shows favorite box and loads the favorites
+// the playlist could be cached to reduce server requests?
+void showFavorites(sortBy, ascending) {
+	$.get('http://localhost:8888/user/getPlaylist', 
+		{
+			'playlistID': user.favID
+		}, 
+		function(data) {
+			if(data['videos']) {
+				var outHtml = generateHTML(data['videos'], sortBy, ascending);
+				$('#overlay').html(outHtml).dialog('open'); //bo han
+				overlay = true;
+			} else console.log("error");
+		}
+	);
+	function generateHTML(videos, sortBy, ascending) {
+		var arrow;
+
+		var outHtml = '<table id="userFavs"><thead><tr><td></td><td><a href="javascript:void(0)" onclick="showAndFillOverlay(\'locTitle\',';
+
+		if(sortBy == 'locTitle') { outHtml += !ascending; arrow = " &#x25B2;"; }
+		else { outHtml += true; arrow = "";}
+
+		outHtml += ',\''+user.favID+'\')">Location Title'+arrow+'</a></td><td><a href="javascript:void(0)" onclick="showAndFillOverlay(\'itemTitle\',';
+
+		if(sortBy == 'itemTitle') { outHtml += !ascending; arrow = " &#x25B2;"; }
+		else { outHtml += true; arrow = ""; }
+
+		outHtml += ',\''+user.favID+'\')">Item Title'+arrow+'</a></td><td><a href="javascript:void(0)" onclick="showAndFillOverlay(\'date\',';
+
+		if(sortBy == 'date') { outHtml += !ascending; arrow = " &#x25B2;"; }
+		else { outHtml += true; arrow = ""; }
+
+		outHtml += ',\''+user.favID+'\')">Date'+arrow+'</a></td></tr></thead><tbody>';
+
+		videos.sort(function(a, b) {
+			var out;
+			var compareA; var compareB;
+			switch(sortBy) {
+				case 'locTitle':
+					compareA = a.locTitle; compareB = b.locTitle;
+					break;
+				case 'itemTitle':
+					compareA = a.itemTitle; compareB = b.itemTitle;
+					break;
+				case 'date':
+					compareA = a.date; compareB = b.date;
+					break;
+			}
+			if(compareA > compareB) out = 1;
+			else if(compareA < compareB) out = -1;
+			else out = 0;
+
+			if(ascending) return out;
+			else return out * -1;
+		});
+		for(var i = 0; i < videos.length; i++) {
+			var video = videos[i];
+			var date = new Date(video['date']);
+			outHtml += '<tr><td><a href="javascript:void(0)" onclick="toggleFav(this, \''+video['locationID']+'\',\''+video['RID']+'\',\''+user.favID+'\')"><img src="http://localhost:8888/heart.svg" width="20" height="20" border="0" /></a></td>';
+			outHtml += '<td><a href="javascript:void(0)" onclick="playVideo(\''+video['locationID']+'\')">' + video['locTitle'] + '</a></td>';
+			outHtml += '<td><a href="javascript:void(0)" onclick="playVideo(\''+video['locationID']+'\',\''+video['RID']+'\')">' + video['itemTitle'] + '</a></td>';
+			outHtml += '<td>' + (date.getMonth() + 1) + "/" + date.getDate() + "/" + date.getFullYear() + '</td>';
+			outHtml += '</tr>';	
+		}
+		outHtml += '</tbody></table>';
+
+		return outHtml;
+	}
 }
 
 //play a video using id (and if included/appropriate) position in list provided
