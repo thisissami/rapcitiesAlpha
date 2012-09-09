@@ -31,6 +31,7 @@ else{
   fpass = require('passport-facebook').Strategy;
   redistore = require('connect-redis')(connect);
   qs = require('querystring');
+  indexor = require('./indexCreator');
 
 passport.serializeUser(function(userid,done){
 	done(null, userid);
@@ -44,9 +45,10 @@ passport.use(new fpass({
 		clientSecret:'b4ba0065d5002941b871610d00afd80b',
 		//clientID:'134659439991720', //rapcities proper
 		//clientSecret:'43c2b1a5bc972868418383d74a51bfa4', // DON'T FORGET TO SWITCH LOCALHOST HERE
-		callbackURL:'http://localhost:8888/auth/facebook/callback'
+		callbackURL:'http://localhost:8888/auth/facebook/callback',
+		passReqToCallback: true
 	},
-	function(accessToken, refreshToken, fbUserData, done){
+	function(req, accessToken, refreshToken, fbUserData, done){
 		var toUpload = {
 			'name':fbUserData._json.name,
 			'birthday':fbUserData._json.birthday,
@@ -56,44 +58,75 @@ passport.use(new fpass({
 			'fbid':fbUserData._json.id,
 			'accessToken':accessToken
 		}
-		users.fbCreate(toUpload, function (err, id) {
+		users.createUser(toUpload, function (err, id) {
 		      if (err) { return done(err); }
 		      done(null, id);
-		});
+		}, req.session);
 	}
 ));
-
+	function returnNone(res){
+		res.writeHead(404);
+		res.end();
+	}
+	function userRouter(req,res,next){
+		var arr = req.url.split('?')[0];
+	    switch(arr){
+			case '/user/noWelcome': users.noWelcome(req,res); break;
+		  	case '/user/addPlaylist': users.addPlaylist(req, res); break;
+			case '/user/removePlaylist': users.removePlaylist(req, res); break;
+			case '/user/renamePlaylist': users.renamePlaylist(req, res); break;
+			case '/user/getPlaylist': users.getPlaylist(req, res); break;
+			case '/user/getPlaylists': users.getPlaylists(req, res); break;
+			case '/user/addVideo': users.addVideo(req, res); break;
+			case '/user/removeVideo': users.removeVideo(req, res); break;
+			case '/user/scUpdate': users.scUpdate(req,res); break;
+			case '/user/fbRecommend': users.fbRecommend(req,res); break;
+			default: 
+				if(authorized(req.user))
+					next();
+				else
+					returnNone(res);
+		}
+	}
+	
+	function authRouter(req,res,next){
+		var arr = req.url.split('?')[0];
+	    switch(arr){
+	    	case '/loc/newtype': locations.newType(req,res); break;
+			case '/loc/getTypeIconID': locations.getTypeIconID(req,res); break;
+			case '/loc/newloc': locations.newLoc(req,res); break;
+			case '/loc/deleteLoc': locations.deleteLoc(req,res); break;
+			case '/loc/search': locations.searchLoc(req,res); break;
+			case '/loc/editLoc': locations.editLoc(req,res); break;
+			case '/loc/editLocation': locations.editLocation(req,res); break;
+			case '/loc/edittype': locations.editType(req,res); break;
+			case '/loc/addCity': locations.addCity(req,res); break;
+			case '/loc/createAnalogue': locations.createAnalogue(req,res); break;
+			default: returnNone(res);
+		}
+	}
+	
   function router(req, res, next) {
-    var parsed = url.parse(req.url,true);
-    var pathname = parsed.pathname;
-    var ext = path.extname(pathname);
-    var arr = pathname.split('?')[0];
+    var arr = req.url.split('?')[0];
 
     switch(arr){
-      case '/seeSongs': users.seeSongs(req, res, next); break;
-      case '/addSong': users.addSong(req, res, next); break;
-      case '/removeSong': users.removeSong(req, res, next); break;
-      case '/countSongs': users.countSongs(req, res, next); break;
-      case '/isFav': users.isFav(req, res, next); break;
-	  case '/loc/newtype':if(authorized(req.user)) locations.newType(req,res); break;
-	  case '/loc/getTypes': locations.getTypes(req,res); break;
-	  case '/loc/getTypeIcon': locations.getTypeIcon(req,res); break;
-	  case '/loc/getTypeIconID':if(authorized(req.user)) locations.getTypeIconID(req,res); break;
-	  case '/loc/newloc':if(authorized(req.user)) locations.newLoc(req,res); break;
-	  case '/loc/browse': locations.browseLoc(req,res); break;
-	  case '/loc/search':if(authorized(req.user)) locations.searchLoc(req,res); break;
-	  case '/loc/editLoc':if(authorized(req.user)) locations.editLoc(req,res); break;
-	  case '/loc/editLocation':if(authorized(req.user)) locations.editLocation(req,res); break;
-	  case '/loc/view': locations.view(req,res); break;
-	  case '/loc/edittype':if(authorized(req.user)) locations.editType(req,res); break;
-	  case '/loc/getCities': locations.getCities(req,res); break;
-	  case '/loc/addCity':if(authorized(req.user)) locations.addCity(req,res); break;
-      default: return;
+		case '/user/getInfo': users.getInfo(req,res); break;
+		case '/user/lastLocation': users.lastLocation(req,res); break;
+		case '/loc/getTypes': locations.getTypes(req,res); break;
+		case '/loc/getTypeIcon': locations.getTypeIcon(req,res); break;
+		case '/loc/browse': locations.browseLoc(req,res); break;
+		case '/loc/view': locations.view(req,res); break;
+		case '/loc/getCities': locations.getCities(req,res); break;
+		default: 
+			if(req.user)
+				next();
+			else
+				returnNone(res);
     }
   }
 
 function authorized(req){
-	if(req == '4fe486215a805bcf53000001' || req == '4fe77c671588a57e47000001' || req == '4fe42f6ecef89ced3d000004' || req == '4fe23f9b363283a404000001')
+	if(req == '504bc0819ce06e4c02000002' || req == '4fe77c671588a57e47000001' || req == '4fe42f6ecef89ced3d000004' || req == '4fe23f9b363283a404000001')
 		return true;
 	else return false;
 }
@@ -115,45 +148,22 @@ function authorized(req){
 				res.writeHead(302, {'location':'http://localhost:8888/login'});
 				res.end();
 			}
-			else if(req.url.split('/')[1] == 'l'){
-				fs.readFile(__dirname + '/pde/indexold.html',function(error,content){
-					if(error){res.writeHead(500); res.end();}
-					else{
-						res.writeHead(200, {
-							'Content-Type':'text/html; charset=utf-8'
-						});
-						res.end(content);
-					}
-				});	 
-			}
+			else if(req.url.split('/')[1] == 'l')
+				indexor.returnIndexL(req.url,res);
+			else if(req.url.split('/')[1] == 'a')
+				indexor.returnIndexA(req.url,res);
 			else
 				next();
 		}
 		else if(req.url.split('/')[1] == 'l'){
-			if(!req.session || !req.session.beenHere){
-				console.log('boop boop boop');
-				fs.readFile(__dirname + '/pde/indexold.html',function(error,content){
-					if(error){res.writeHead(500); res.end();}
-					else{
-						req.session.beenHere = 'Y';
-						res.writeHead(200, {
-							'Content-Type':'text/html; charset=utf-8'//,
-							//'Set-Cookie':'INU=IS; Path=/; Max-Age=86400;'
-						});
-						res.end(content);
-					}
-				});	 
-			}
-			else{
-				fs.readFile(__dirname + '/files/landing.html',function(error,content){
-					res.writeHead(200,{'Content-Type':'text/html; charset=utf-8'});
-		        	res.end(content);
-				});
-			}
+			if(req.session) req.session.beenHere = 'Y';
+			indexor.returnIndexL(req.url,res);
 		}
+		else if(req.url.split('/')[1] == 'a')
+			indexor.returnIndexA(req.url,res);		
 		else if(req.url == '/logN'){
 			req.session.beenHere = 'N';
-			fs.readFile(__dirname + '/files/landing.html',function(error,content){
+			fs.readFile(__dirname + '/files/html/landing.html',function(error,content){
 				res.writeHead(200,{'Content-Type':'text/html; charset=utf-8'});
 	        	res.end(content);
 			});
@@ -190,7 +200,7 @@ function authorized(req){
 					return;
 				}
 				else{
-		        	folder = __dirname + '/files/landing.html';
+		        	folder = __dirname + '/files/html/landing.html';
 		        	contentType = 'text/html; charset=utf-8';
 			    }
 				if(folder){
@@ -225,8 +235,10 @@ function authorized(req){
 	checkLoggedIn,
     require('./fileServer')(),
     connect.compress({memLevel:9}),
-    //router).listen(80);
-	router).listen(8888);
+	router,
+	userRouter,
+    //authRouter).listen(80);
+	authRouter).listen(8888);
   console.log('Server has started.');
 }
 

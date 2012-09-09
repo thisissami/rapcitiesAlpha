@@ -19,7 +19,13 @@
 	
 	var types;
 	function prepTypeSelector(functionName){
-		$.get('/loc/getTypes', function(data){
+		var sendata = {};
+		if(functionName == 'prepAnalogue')
+			sendata['noAnalogues'] = true;
+		else if(functionName == 'changeType'){
+			sendata['analogue'] = locs[locnum].type;
+		}
+		$.get('/loc/getTypes', sendata, function(data){
 			if(data.types){
 				$('#display #types').append('Please pick a type from below:<br /><br />');
 				var i; types = data.types;
@@ -28,6 +34,22 @@
 				}
 			}
 		});
+	}
+	var locnum; //position of loc
+	function changeType(i){
+		locs[locnum].type = types[i]._id;
+		cancelAnalogue(locnum);
+		$('#type'+locnum).val(types[i]._id);
+	}
+	function getAnalogues(i){
+		$('#display #analogue'+i).html('<div id="types"></div>');
+		locnum = i;
+		prepTypeSelector('changeType');
+		$('#display #analogue'+i).append('<a href="javascript:void(0)" onclick="cancelAnalogue('+i+')">Cancel</a>');	
+	}
+	
+	function cancelAnalogue(i){
+		$('#display #analogue'+i).html('<a href="javascript:void(0)" onclick="getAnalogues('+i+')">Change Type to an Analogue</a>');
 	}
 	
 	function prepEditTypeForm(i){
@@ -42,8 +64,23 @@
 			dataType: 'json'
 		}
 		$('#editTypeForm').ajaxForm(options);
-		curtype = i
 	}
+	
+	function prepAnalogue(i){
+		$('#display #types').html('<i>Please fill out the following fields in order to create an analogue to type</i> <b>'+types[i].type+'</b>: <br /><br />');
+		$('#display #types').append($('#edittypeform').html());
+		$('#display #editTypeForm').prepend('Type Name: <input type="text" name="type" id="et-type" size="20"/> <br />Type ID/Abbreviation (no spaces and non-alphanumeric characters): <input type="text" name="_id" id="et-id" size="20"/> <br />');
+		$('#display #et-sub').before('parent: <input type="text" name="parent" value="'+types[i]._id+'" readonly="readonly"/><br />');
+		var options = {
+			beforeSubmit: validateAnalogue,
+			success: checkResponse,
+			url:'/loc/createAnalogue',
+			type:'POST',
+			dataType: 'json'
+		};
+		$('#editTypeForm').ajaxForm(options);
+	}
+	
 	function prepNewLocForm(i){
 		$.get('/loc/getCities', function(data){
 			if(data.object){
@@ -134,6 +171,12 @@
 			alert('ruh-roh! you need to provide a title for the loc!');
 			return false;
 		}
+		if($('#alternate'+valedit).val()){ 
+			if($('#alternate'+valedit).val().split(' ').length > 1){
+				alert('ruh-roh! you have a space in your alternate URL!');
+				return false;
+			}
+		}
 		return true;
 	}
 	var curtype;
@@ -159,6 +202,34 @@
 		}
 		if(!boolcolor && !boolicon){
 			alert('you need to have at least one thing to change...');
+			return false;
+		}
+		return true;
+	}
+	
+	function validateAnalogue(){
+		if(!$('#et-type').val()){
+			alert('please supply a name');
+			return false;
+		}
+		if(!$('#et-id').val()){
+			alert('please supply a type id');
+			return false;
+		}
+		if(!$('#et-icon').val()){
+			alert('please supply an icon');
+			return false;
+		}
+		if(!$('#et-r').val() || isNaN(parseInt($('#et-r').val())) || parseInt($('#et-r').val()) > 256 || parseInt($('#et-r').val()) < 0){
+			alert('please supply a proper red value');
+			return false;
+		}
+		if(!$('#et-g').val() || isNaN(parseInt($('#et-g').val())) || parseInt($('#et-g').val()) > 256 || parseInt($('#et-g').val()) < 0){
+			alert('please supply a proper green value');
+			return false;
+		}
+		if(!$('#et-b').val() || isNaN(parseInt($('#et-b').val())) || parseInt($('#et-b').val()) > 256 || parseInt($('#et-b').val()) < 0){
+			alert('please supply a proper blue value');
 			return false;
 		}
 		return true;
@@ -288,6 +359,14 @@
 		$('#listnum'+i).val(++locs[i].listnum);
 		prepEditForm(i);
 	}
+
+	function editAlternateLink(i){
+		var datahtml = 'http://RapCities.com/a/<input name="alternate" id="alternate'+i+'" type="text" size="20"';
+		if(locs[i].alternate)
+			datahtml += 'value="'+locs[i].alternate+'"';
+		datahtml += '/> NO SPACES ALLOWED';
+		$('#alternateSpan'+i).html(datahtml);
+	}
 	
 	function editList(i){
 		if(locs[i].list){
@@ -310,13 +389,27 @@
 			+locs[i].title+'</a> of type: '+locs[i].type);
 	}
 	
+	function deleteLoc(i){
+		if(confirm('WARNING\n\nWARNING  WARNING    SERIOUS WARNING\n\n       ALL DATA FOR THIS POINT WILL BE LOST\n\n   LOST FOREVER IRREPARABLY!!!')){
+			if(confirm('LAST CHANCE!!!! ARE YOU 100% SURE YOU WANT THIS DATA TO DISAPPEAR OFF OF THIS INTERNET (but into a different internet in a parallel universe)?!?!?!')){
+				var sendata = {city:locs[i].city, _id:locs[i]._id};
+				$.get('/loc/deleteLoc', sendata, function(data){
+					checkResponse(data);
+					if(data.success){
+						$('#loc'+i).html('');
+					}
+				});
+			}
+		}
+	}
+	
 	function editLoc(i){
 		var bioexists = false;
-		var datahtml = '<br /><a href="javascript:void(0)" onclick="closeLoc('+i+')">Close <b>'+locs[i].title+'</b></a><br /><br /> <form name="locupdate" id="locupdate'+i+'">';
+		var datahtml = '<br /><a href="javascript:void(0)" onclick="closeLoc('+i+')">Close <b>'+locs[i].title+'</b></a><br /><a href="javascript:void(0)" onclick="deleteLoc('+i+')"><b>Delete</b> '+locs[i].title+'</a><br /><span id="analogue'+i+'"><a href="javascript:void(0)" onclick="getAnalogues('+i+')">Change Type to an Analogue</a></span><br/><br /> <form name="locupdate" id="locupdate'+i+'">';
 		for(var key in locs[i]){
 			if(key == 'list'){ datahtml+= '<span id="list'+i+'"><a href="javascript:void(0)" onclick="editList('+i+')"> Click to Edit List </a></span><input type="text" name="list" readonly="readonly" size="1" value="list"/><br />';
 			}
-			else if(key == 'listnum' || key == 'x' || key == 'y' || key == 'viewcount') continue;
+			else if(key == 'listnum' || key == 'x' || key == 'y' || key == 'viewcount' || key == 'alternate') continue;
 			else if(key == 'info' || key == 'bio'){
 				datahtml+= key+': <textarea name="'+key+'" id="'+key+i+'"cols="30" rows="4" id="nl-info">'+locs[i][key]+'</textarea><br/>';
 				if(key == 'bio') bioexists = true;
@@ -344,6 +437,7 @@
 		if(!bioexists){
 			datahtml+= 'bio: <textarea name="bio" id="bio'+i+'"cols="30" rows="4" id="nl-info"></textarea><br/>';
 		}
+		datahtml += '<span id="alternateSpan'+i+'"><a href="javascript:void(0)" onclick="editAlternateLink('+i+')">Create or Edit the alternate link for this plot</a></span><br />';
 		datahtml += '<input type="submit" value="Save"/></form>';
 		$('#loc'+i).html(datahtml);
 		prepEditForm(i);
@@ -386,13 +480,16 @@
 			case 5: $("div#display").html($('#addacity').html());
 				prepCityAddition();
 				break;
+			case 6: $("div#display").html($('#createanalogue').html());
+				prepTypeSelector('prepAnalogue');
+				break;
 		}
 	  }		
 		</script>
 </head>
 <body>
 	<b>Choose A Choice from the Chosen Choices</b> <br /><br />
-<a href="javascript:void(0)" onclick="setMenu(0)"> Create A New Type of Location</a> | <a href="javascript:void(0)" onclick="setMenu(4)">Edit an existing Type</a> | <a href="javascript:void(0)" onclick="setMenu(5)">Add a city</a><br />
+<a href="javascript:void(0)" onclick="setMenu(0)"> Create A New Type of Location</a> | <a href="javascript:void(0)" onclick="setMenu(4)">Edit an existing Type</a> | <a href="javascript:void(0)" onclick="setMenu(6)">Create an Analogue Type</a> | <a href="javascript:void(0)" onclick="setMenu(5)">Add a city</a><br />
 <a href="javascript:void(0)" onclick="setMenu(1)"> Create A New Location from an Existing Type </a> <br />
 <a href="javascript:void(0)" onclick="setMenu(2)"> Search For Location </a> |
 <a href="javascript:void(0)" onclick="setMenu(3)"> Browse All Locations </a> <br /><br />
@@ -403,7 +500,6 @@ ____________________________________________<br /><br />
 <div id="newtype" style="display:none">
 	<b>TYPE CREATION</b><br /><br />
 	<form name="newtype" id="newtypeform">
-		Website: <input type="radio" name="site" id="nt-s" value="rapcities" checked="checked"/> RapCities<br />
 		Type Name: <input type="text" name="type" id="nt-type" size="20"/> <br />
 		Type ID/Abbreviation (no spaces and non-alphanumeric characters): <input type="text" name="_id" id="nt-id" size="20"/> <br />
 		List or Single Item?: <input type="radio" name="list" id="nt-l1" value="list"/> list  
@@ -420,6 +516,10 @@ ____________________________________________<br /><br />
 </div>
 <div id="editexistingtype" style="display:none">
 	<b>EDIT EXISTING TYPE</b><br /><br />
+	<div id="types"></div>	
+</div>
+<div id="createanalogue" style="display:none">
+	<b>CREATE ANALOGUE TYPE</b><br />Create an analogue types from one of the "normal" types. This analogue type is identical to the "normal" type it is created from, except its name, icon, and color can change.<br /><br />
 	<div id="types"></div>	
 </div>
 <div id="addacity" style="display:none">

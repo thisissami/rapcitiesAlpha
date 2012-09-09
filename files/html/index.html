@@ -1,0 +1,607 @@
+<html>
+   <head>
+    <title>RapCities Pre-Alpha</title>
+    <script type="text/javascript" src="http://localhost:8888/processing.js"></script>
+    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+	    <script type="text/javascript" src="http://localhost:8888/soundmanager2.js"></script>
+    <script type="text/javascript" src="http://xe-widgets.googlecode.com/svn-history/r10/trunk/widgets/xe_banner/skins/bannerSlider/js/slides.jquery.js"></script>
+	<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/swfobject/2.2/swfobject.js"></script>
+	<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.18/jquery-ui.min.js"></script>
+	<!--<link rel="stylesheet" type="text/css" href="jquery-ui-1.8.18.custom.css" />-->
+    <link rel='stylesheet' src="http://slidesjs.com/examples/images-with-captions/css/global.css">
+        <script type="text/javascript" src="http://localhost:8888/js/jquery-ui-1.8.18.custom.min.js"></script>
+    
+    <link type="text/css" href="http://localhost:8888/css/dark-hive/jquery-ui-1.8.18.custom.css" rel="stylesheet" />
+
+    <style type="text/css">
+      body {
+        background-color: black;
+        color: white;
+		margin:0px;overflow:hidden;
+      }
+      h2 {
+        font-size: 16px;
+      }
+      #canvas {
+        /*width: 1158px;
+        height: 635px;*/
+        position: absolute;
+        z-index: 0;
+		/*left: 50%;
+		margin-left:-479px;*/
+		/*margin: auto;*/
+      }
+      #artist-info {
+        position: absolute;
+        z-index: -1;
+        display: none;
+        background-color: black;
+        font: 15px Verdana, sans-serif;
+		left: 50%;
+		margin-left:-479px;
+      }
+      #top  {
+        width: 700px;
+        margin: 0 auto;
+      }
+      #top li {
+        display: inline;
+      }
+      #center {
+        float: left;
+      }
+      #popup {
+        z-index: 2;
+        float: left;
+        display: none;
+      }
+      #popup a{
+        color: white;
+      }
+      #popup-nav {
+        height: 50px;
+      }
+      #popup-close {
+        float: left;
+      }
+      #popup-url {
+        float: right;
+      }
+      #center div {
+        display: none;
+      }
+      #center div div {
+        display: block;
+      }
+      td.square-td {
+        width: 33%;
+      }
+      div.square {
+        height: 166px;
+        margin: 10px;
+        text-overflow: ellipsis;
+        overflow: hidden;
+        padding: 12px;
+      }
+      div.square-hover {
+        border: 2px solid white;
+        padding: 10px;
+      }
+      .square a {
+        text-decoration: underline;
+        color: white;
+      }
+      .square p {
+        font-size: 14px;
+      }
+      .type {
+        float: left;
+        width: 100px;
+        height: 36px;
+        padding-top: 16px;
+        text-align: center;
+        border: 2px solid white;
+      }
+      #close {
+        font-weight: bold;
+      }
+      .selected-type {
+        background-color: white;
+        color: black;
+      }
+      .hover-type {
+        background-color: white;
+        color: black;
+      }
+      .never-hover-square {
+        padding: 12px !important;
+        border: none !important;
+      }
+      .square h2 {
+        font-size: 16px;
+        font-weight: bold;
+      }
+      .video {
+        text-align: center;
+      }
+      .clear {
+        clear: both;
+      }
+      iframe.popup {
+        z-index: 2;
+      }
+      .video-thumbnail {
+        width: 120px;
+      }
+      
+      
+      
+      /* slides */
+      .slides_container {
+        width:570px;
+        overflow:hidden;
+        position:relative;
+        display:none;
+      }
+      
+      .slides_container div.slide {
+        width:570px;
+        display:block;
+      }
+
+	#dialogWindow{
+		z-index:1;
+		position:absolute;
+		right:20px;
+		top:296px;
+	}
+	#YouTubeP{
+		z-index:1;
+	}
+	#legalDialog{
+		z-index:3;
+	}
+	#legalbottom{
+		z-index:2;
+		position:absolute;
+		bottom:0;
+	}
+	#parent{
+		position:relative;
+	}
+    a {
+      color: #CCCCCC;
+      text-decoration: underline;
+    }
+    
+    a:hover {
+      color: #FFFFFF;
+    }
+    
+    #userFavs {
+	    font-family: "Lucida Sans Unicode", "Lucida Grande", Sans-Serif;
+	    font-size: 12px;
+	    width: 480px;
+	    text-align: left;
+	    border-collapse: collapse;
+	    border: 1px solid #FFFFFF;
+	    background-color: #000;
+	    margin:0 auto;
+    }
+    
+    #userFavs th {
+	    padding: 12px 17px 12px 17px;
+	    font-weight: bold;
+	    font-size: 14px;
+	    color: #FFFFFF;
+	    border-bottom: 1px dashed #FFFFFF;
+    }
+    
+    #userFavs td {
+	    padding: 7px 17px 7px 17px;
+	    color: #FFFFFF;
+    }
+    
+    #userFavs tbody tr:hover td {
+	    color: #222222;
+	    background: #CCCCCC;
+    }
+    
+    #login-block {
+      text-align:right;
+      margin:0 auto;
+      //width:271px; // this is size of other panel
+      width:auto;
+      color: #FFFFFF;
+      background: #000000;
+      		z-index:5;
+		position:absolute;
+		right:18px;
+		top:10px;
+		border: 2px solid #EEEEEE;
+      padding: 6px 6px 6px 6px;
+    }
+    
+    #toolbox {
+      margin: 0 auto;
+      left: 0px;
+      top: 0px;
+      width: auto;
+      //height: 26px;
+      background: #000000;
+      z-index: 500;
+      position: relative;
+      overflow: visible;
+      //display: none;
+      float: left;
+    }
+    
+    #fbLikeContainer {
+      width: 91px;
+      overflow: visible;
+      display: inline-block;
+    }
+    
+    #fbLikeContainer iframe {
+    width: 91px !important;
+}
+
+#fbLikeContainer .fb_iframe_widget span {
+	vertical-align:baseline;
+}
+
+#fbLikeContainer .fb_edge_comment_widget iframe {
+    width: 400px !important;
+}
+
+#welcomeFB {
+    display: block;
+    margin-left: auto;
+    margin-right: auto }
+    
+    #fbLoginSpan {
+      float:right;
+    }
+    </style>
+	<script type="text/javascript">
+
+	  var _gaq = _gaq || [];
+	  _gaq.push(['_setAccount', 'UA-32180049-1']);
+	  _gaq.push(['_trackPageview']);
+
+	  (function() {
+	    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+	    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+	    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+	  })();
+
+	</script>
+	<script type="text/javascript">
+      $(document).ready(function(){
+        var cvs = document.getElementById("canvas");
+        var p = new Processing(cvs, 
+(function(ak){var k=(function(){function a8(){var ba=this;function bc(){ak.extendClassChain(ba)}ba.x=0;ba.y=0;ba.hw=0;ba.hh=0;ba.invert=false;ba.pressedHere=false;function bf(){return ak.mouseX>ba.x-ba.hw&&ak.mouseX<ba.x+ba.hw&&ak.mouseY>ba.y-ba.hh&&ak.mouseY<ba.y+ba.hh}ak.addMethod(ba,"pressed",bf);function bg(bi,bj){ba.x=bi;ba.y=bj}ak.addMethod(ba,"newPos",bg);function be(){}ak.addMethod(ba,"mousePressed",be);function bb(){}ak.addMethod(ba,"mouseReleased",bb);function bd(){}ak.addMethod(ba,"draw",bd);function bh(bj,bl,bi,bk){bc();ba.x=bj;ba.y=bl;ba.hw=bi;ba.hh=bk}function a9(){if(arguments.length===4){bh.apply(ba,arguments)}else{bc()}}a9.apply(null,arguments)}return a8})();ak.Button=k;var at=(function(){function a8(){var bf=this;function bg(){ak.extendClassChain(bf)}bf.streetCredit=0;bf.curStreetCredit=0;bf.curTimeTotal=0;bf.curTime=0;bf.exists=false;bf.unfocused=0;bf.favorites=null;bf.locID=null;bf.locRID=null;bf.favID=null;bf.playlists=null;function bh(bi){if(bf.curTime!=bi){bf.curTime=bi}}ak.addMethod(bf,"setTimePos",bh);function bb(bj){if(bf.locID){var bi={_id:bf.locID,streetCreditTot:bf.streetCredit,streetCreditCur:bf.curStreetCredit,seconds:bf.curTimeTotal};if(bf.locRID){bi.RID=bf.locRID}$.post("http://localhost:8888/user/scUpdate",bi)}if(bj){return}bf.curStreetCredit=0;bf.curTime=0;bf.locID=a4._id;if(a4.list){bf.locRID=a4.list[playingVideo].RID}else{bf.locRID=false}}ak.addMethod(bf,"resetCurCount",bb);function bd(bj){if(bf.exists&&bf.curTime<ak.floor(bj)){bf.curTime++;bf.curTimeTotal++;var bi=1;if(a4.list&&a4.list[playingVideo].streetcred){bi=a4.list[playingVideo].streetcred}else{if(a4.streetcred){bi=a4.streetcred}}if(!b){if(bf.unfocused==9){bf.unfocused=0}else{bf.unfocused++;return}}bf.curStreetCredit+=bi;bf.streetCredit+=bi}}ak.addMethod(bf,"setCurTime",bd);function ba(){var bi={locationID:a4._id,locTitle:a4.title};bi.date=new Date();if(a4.list){bi.itemTitle=a4.list[playingVideo].title;bi.RID=a4.list[playingVideo].RID}bf.favorites.push(bi)}ak.addMethod(bf,"addFav",ba);function be(){for(var bi=0;bi<bf.favorites.length;bi++){if(a4._id==bf.favorites[bi].locationID){if(a4.list&&playingVideo==bf.favorites[bi].RID){bf.favorites.splice(bi,1);break}else{if(a4.ytid){bf.favorites.splice(bi,1);break}}}}}ak.addMethod(bf,"removeFav",be);function a9(){bg();$.get("http://localhost:8888/user/getInfo",function(bi){if(bi&&bi.success){bf.exists=true;if(bi.streetCredit){bf.streetCredit=bi.streetCredit}if(bi.lastLocation){loadlocID=bi.lastLocation;if(bi.lastRID){loadvidID=bi.lastRID}}if(!bi.noWelcome){$("#interactiveDialog").html($("#instructions").html()).dialog({width:460}).dialog({height:380}).dialog("open")}if(bi.lastLocation){h=bi.lastLocation;if(bi.lastRID){J=bi.lastRID}}$.get("http://localhost:8888/user/getPlaylists",function(bj){if(bj.success){bf.favID=bj.favId;$.get("http://localhost:8888/user/getPlaylist",{playlistID:X.favID},function(bk){if(bk&&bk.videos){bf.favorites=bk.videos}else{console.log("error")}})}})}})}function bc(){if(arguments.length===0){a9.apply(bf,arguments)}else{bg()}}bc.apply(null,arguments)}return a8})();ak.User=at;var Z=(function(){function a8(){var be=this;function a9(){ak.extendClassChain(be)}be.HEART=0;be.BASKET=1;be.FACEREC=2;be.LOGOUT=3;be.ARTBIO=4;be.STREETCRED=5;be.streetCredSize=0;be.streetCredRight=0;function bc(){ak.fill(0);ak.stroke(255);ak.textSize(24);ak.rectMode(ak.CORNERS);be.streetCredSize=ak.textWidth(X.streetCredit);ak.rect(toolLeft,toolTop,toolLeft+toolWidth+be.streetCredSize,toolTop+toolFull);ak.shapeMode(ak.CENTER);if(a4&&(a4.fav||(a4.list&&a4.list[playingVideo].fav))){ak.shape(aX,toolLeft+toolHalf,toolTop+toolHalf,toolHalf+4,toolHalf+2)}else{ak.shape(A,toolLeft+toolHalf,toolTop+toolHalf,toolHalf+4,toolHalf+2)}ak.imageMode(ak.CENTER);ak.image(m,toolLeft+toolHalf*3,toolTop+toolHalf);ak.image(t,toolLeft+toolHalf*5,toolTop+toolHalf,toolFull-5,toolFull-5);ak.image(f,toolLeft+toolHalf*7,toolTop+toolHalf);ak.image(aZ,toolLeft+toolHalf*9,toolTop+toolHalf);ak.fill(255);ak.textAlign(ak.LEFT,ak.TOP);ak.text(X.streetCredit,toolLeft+toolHalf*10,toolTop+6);be.streetCredRight=toolLeft+toolHalf*10+be.streetCredSize;ak.image(af,be.streetCredRight+toolHalf,toolTop+toolHalf);if(ak.mouseY>toolTop&&ak.mouseY<toolTop+toolFull&&ak.mouseX>toolLeft&&ak.mouseX<toolLeft+toolWidth+be.streetCredSize){ak.textSize(14);ak.fill(0);ak.stroke(255);ak.rectMode(ak.CORNERS);if(ak.mouseX<toolLeft+toolFull){var bf=null;if(a4&&(a4.fav||(a4.list&&a4.list[playingVideo].fav))){bf="Un-Heart Song"}else{bf="Heart Song"}ak.rect(toolLeft,toolTop-5,toolLeft+ak.textWidth(bf)+8,toolTop-25);ak.fill(255);ak.text(bf,toolLeft+4,toolTop-23);toolHover=be.HEART}else{if(ak.mouseX>toolLeft+toolFull&&ak.mouseX<toolLeft+toolFull*2){ak.rect(toolLeft+toolFull,toolTop-5,toolLeft+toolFull+ak.textWidth("View HeartBasket")+8,toolTop-25);ak.fill(255);ak.text("View HeartBasket",toolLeft+toolFull+4,toolTop-23);toolHover=be.BASKET}else{if(ak.mouseX>toolLeft+toolFull*2&&ak.mouseX<toolLeft+toolFull*3){ak.rect(toolLeft+toolFull*2,toolTop-5,toolLeft+toolFull*2+ak.textWidth("Recommend Song on Facebook")+8,toolTop-25);ak.fill(255);ak.text("Recommend Song on Facebook",toolLeft+toolFull*2+4,toolTop-23);toolHover=be.FACEREC}else{if(ak.mouseX>toolLeft+toolFull*3&&ak.mouseX<toolLeft+toolFull*4){ak.rect(toolLeft+toolFull*3,toolTop-5,toolLeft+toolFull*3+ak.textWidth("Artist Biography")+8,toolTop-25);ak.fill(255);ak.text("Artist Biography",toolLeft+toolFull*3+4,toolTop-23);toolHover=be.ARTBIO}else{if(ak.mouseX>toolLeft+toolFull*4&&ak.mouseX<be.streetCredRight){ak.rect(toolLeft+toolFull*4,toolTop-5,toolLeft+toolFull*4+ak.textWidth("Street Credit")+8,toolTop-25);ak.fill(255);ak.text("Street Credit",toolLeft+toolFull*4+4,toolTop-23);toolHover=be.STREETCRED}else{if(ak.mouseX>be.streetCredRight&&ak.mouseX<be.streetCredRight+toolFull){ak.rect(be.streetCredRight,toolTop-5,be.streetCredRight+ak.textWidth("Logout")+8,toolTop-25);ak.fill(255);ak.text("Logout",be.streetCredRight+4,toolTop-23);toolHover=be.LOGOUT}}}}}}}else{toolHover=-1}}ak.addMethod(be,"draw",bc);function ba(){switch(toolHover){case be.HEART:if(a4){if(a4.list){if(a4.list[playingVideo].fav){$.get("http://localhost:8888/user/removeVideo",{locationID:a4._id,RID:a4.list[playingVideo].RID,playlistID:X.favID});a4.list[playingVideo].fav=false;X.removeFav()}else{$.get("http://localhost:8888/user/addVideo",{locationID:a4._id,locTitle:a4.title,RID:a4.list[playingVideo].RID,itemTitle:a4.list[playingVideo].title,playlistID:X.favID});a4.list[playingVideo].fav=true;X.addFav()}}else{if(a4.fav){$.get("http://localhost:8888/user/removeVideo",{locationID:a4._id,playlistID:X.favID});a4.fav=false;X.removeFav()}else{$.get("http://localhost:8888/user/addVideo",{locationID:a4._id,locTitle:a4.title,playlistID:X.favID});a4.fav=true;X.addFav()}}}break;case be.BASKET:if(!$("#overlay").dialog("isOpen")){x("date",true)}else{$("#overlay").dialog("close")}break;case be.LOGOUT:ak.link("http://localhost:8888/logout");break;case be.FACEREC:if(a4){var bf={type:a4.type,locName:a4.title,_id:a4._id};if(a4.list){bf.subName=a4.list[playingVideo].title;bf.RID=a4.list[playingVideo].RID}$.post("http://localhost:8888/user/fbRecommend",bf)}break;case be.ARTBIO:if(a4){G()}break;case be.STREETCRED:if(!$("#streetCreditStore").dialog("isOpen")){$("#streetCreditStore").dialog("open")}else{$("#streetCreditStore").dialog("close")}break}}ak.addMethod(be,"mouseClicked",ba);function bb(){a9();toolHover=-1;toolTop=ai;toolFull=40;toolHalf=toolFull/2;toolWidth=toolFull*6;toolLeft=ak.width/2-toolWidth/2}function bd(){if(arguments.length===0){bb.apply(be,arguments)}else{a9()}}bd.apply(null,arguments)}return a8})();ak.Toolbox=Z;var I=(function(){function a8(){var bg=this;function be(){ak.extendClassChain(bg)}bg.miniNYC=null;bg.ox=0;bg.oy=0;bg.ocx=0;bg.ocy=0;bg.widths=null;bg.heights=null;bg.ominx=0;bg.ominy=0;bg.opressed=false;bg.miniPressed=false;bg.once=false;function bc(){bg.$self.drawMap();bg.$self.drawLocations();ak.fill(0);ak.noStroke();ak.rectMode(ak.CORNERS);bg.$self.drawMini()}ak.addMethod(bg,"draw",bc);function bd(){$.getJSON("http://localhost:8888/loc/browse?city=NYC&hasLoc=8&public=4",function(bA){if(bA&&bA.locs){for(var bz=0;bz<bA.locs.length;bz++){aK.add(bA.locs[bz])}}});$.getJSON("http://localhost:8888/loc/getTypes",function(bA){if(bA&&bA.types){for(var bz=0;bz<bA.types.length;bz++){aP.put(bA.types[bz]._id,ak.requestImage("http://localhost:8888/loc/getTypeIcon?_id="+bA.types[bz]._id));aB[bA.types[bz]._id]=ak.color(bA.types[bz].r,bA.types[bz].g,bA.types[bz].b)}}})}ak.addMethod(bg,"setUpLocations",bd);function ba(){ak.imageMode(ak.CENTER);var bz=0;var bC=0;var bB=0;for(bB=0;bB<8;bB++){bz+=bg.widths[bB];if(bz>aT){break}}var bA=0;for(bA=0;bA<8;bA++){bC+=bg.heights[bA];if(bC>aR){break}}bg.$self.grimage(bA,bB,ar/2-(bg.widths[bB]/2-(bz-aT)),aa/2-(bg.heights[bA]/2-(bC-aR)));if(bA>0){bg.$self.grimage(bA-1,bB,ar/2-(bg.widths[bB]/2-(bz-aT)),aa/2-bg.heights[bA]-(bg.heights[bA-1]/2-(bC-aR))+1)}if(bB>0){bg.$self.grimage(bA,bB-1,ar/2-bg.widths[bB]-(bg.widths[bB-1]/2-(bz-aT))+1,aa/2-(bg.heights[bA]/2-(bC-aR)))}if(bA<7){bg.$self.grimage(bA+1,bB,ar/2-(bg.widths[bB]/2-(bz-aT)),aa/2+bg.heights[bA+1]/2+(bC-aR)-1)}if(bB<7){bg.$self.grimage(bA,bB+1,ar/2+bg.widths[bB+1]/2+(bz-aT)-1,aa/2-(bg.heights[bA]/2-(bC-aR)))}if(bA>0&&bB>0){bg.$self.grimage(bA-1,bB-1,ar/2-bg.widths[bB]-(bg.widths[bB-1]/2-(bz-aT))+1,aa/2-bg.heights[bA]-(bg.heights[bA-1]/2-(bC-aR))+1)}if(bA>0&&bB<7){bg.$self.grimage(bA-1,bB+1,ar/2+bg.widths[bB+1]/2+(bz-aT)-1,aa/2-bg.heights[bA]-(bg.heights[bA-1]/2-(bC-aR))+1)}if(bA<7&&bB<7){bg.$self.grimage(bA+1,bB+1,ar/2+bg.widths[bB+1]/2+(bz-aT)-1,aa/2+bg.heights[bA+1]/2+(bC-aR)-1)}if(bA<7&&bB>0){bg.$self.grimage(bA+1,bB-1,ar/2-bg.widths[bB]-(bg.widths[bB-1]/2-(bz-aT))+1,aa/2+bg.heights[bA+1]/2+(bC-aR)-1)}}ak.addMethod(bg,"drawMap",ba);function bk(bA,bC,bB,bz){if(artmode){if(artgrid[bA][bC]){if(artgrid[bA][bC].width>0){ak.image(artgrid[bA][bC],bB,bz)}else{bg.$self.drawLoadingBlock(bA,bC,bB,bz)}}else{if(!artgridLoad[bA][bC]){bg.$self.loadArtMapPiece(bA,bC);bg.$self.drawLoadingBlock(bA,bC,bB,bz)}}}else{if(ag[bA][bC]){if(ag[bA][bC].width>0){ak.image(ag[bA][bC],bB,bz)}else{bg.$self.drawLoadingBlock(bA,bC,bB,bz)}}else{if(!W[bA][bC]){bg.$self.loadMapPiece(bA,bC);bg.$self.drawLoadingBlock(bA,bC,bB,bz)}}}}ak.addMethod(bg,"grimage",bk);function bj(bA,bz){var bB=null;if((bA==0)||(bA==1&&bz<1)){bB="0";bB+=String(bA*8+bz+1)+".grid"}else{bB=String(bA*8+bz+1)+".grid"}W[bA][bz]=true;ag[bA][bz]=ak.requestImage("http://localhost:8888/"+bB)}ak.addMethod(bg,"loadMapPiece",bj);function br(bA,bz){var bB=null;if((bA==0)||(bA==1&&bz<1)){bB="0";bB+=String(bA*8+bz+1)+".art.grid"}else{bB=String(bA*8+bz+1)+".art.grid"}artgridLoad[bA][bz]=true;artgrid[bA][bz]=ak.requestImage("http://localhost:8888/"+bB)}ak.addMethod(bg,"loadArtMapPiece",br);function bo(bA,bC,bB,bz){ak.rectMode(ak.CENTER);ak.noStroke();ak.fill(0);ak.rect(bB,bz,bg.widths[bA],bg.heights[bC]);ak.textSize(30);ak.fill(255);ak.text("Loading Map Section",bB,bz)}ak.addMethod(bg,"drawLoadingBlock",bo);function bu(){ak.imageMode(ak.CORNERS);ak.image(bg.miniNYC,aj,u,v,an);ak.rectMode(ak.CENTER);ak.noFill();ak.strokeWeight(1);ak.stroke(ak.color(255,0,0));ak.rect(aj+ad,u+ac,aF,aE);ak.ellipseMode(ak.CENTER);for(var bz=0;bz<aK.size();bz++){var bA=aK.get(bz);ak.fill(aB[bA.type]);ak.stroke(aB[bA.type]);if(a4&&bA._id==a4._id){ak.ellipse(ak.map(bA.x,531.749,531.749+853,aj,v),ak.map(bA.y,231.083,231.083+810,u,an),5,5)}else{ak.ellipse(ak.map(bA.x,531.749,531.749+853,aj,v),ak.map(bA.y,231.083,231.083+810,u,an),3,3)}}}ak.addMethod(bg,"drawMini",bu);function bm(){ar=Q;aa=aQ;aF=ak.map(ar,0,a2,0,284);aE=ak.map(aa,0,az,0,270);aT=2600;aR=4100;ad=ak.map(aT,0,a2,0,284);ac=ak.map(aR,0,az,0,270);bg.widths=new Array(1000,1000,1000,1000,1000,1000,1000,1000);bg.heights=new Array(950,950,950,950,950,950,950,950);bg.$self.setMins()}ak.addMethod(bg,"prep",bm);function bi(){if(ak.mouseX>aj&&ak.mouseY>u&&ak.mouseX<v&&ak.mouseY<an){bg.miniPressed=true;ad=ak.min(ak.max(aF/2,ak.mouseX-aj),284-aF/2);ac=ak.min(ak.max(aE/2,ak.mouseY-u),270-aE/2);bg.$self.miniToMaxi()}}ak.addMethod(bg,"miniMousePressed",bi);function bl(){if(bg.miniPressed){ad=ak.min(ak.max(aF/2,ak.mouseX-aj),284-aF/2);ac=ak.min(ak.max(aE/2,ak.mouseY-u),270-aE/2);bg.$self.miniToMaxi()}}ak.addMethod(bg,"miniMouseDragged",bl);function a9(){aT=ak.map(ad,0,284,0,a2);aR=ak.map(ac,0,270,0,az);bg.$self.setMins()}ak.addMethod(bg,"miniToMaxi",a9);function bv(){bg.miniPressed=false}ak.addMethod(bg,"miniMouseReleased",bv);function bw(){if(ak.key==ak.CODED){switch(ak.keyCode){case (ak.UP):ac=ak.max(ac-1,aE/2);bg.$self.miniToMaxi();break;case (ak.DOWN):ac=ak.min(ac+1,270-aE/2);bg.$self.miniToMaxi();break;case (ak.LEFT):ad=ak.max(ad-1,aF/2);bg.$self.miniToMaxi();break;case (ak.RIGHT):ad=ak.min(ad+1,284-aF/2);bg.$self.miniToMaxi();break}}}ak.addMethod(bg,"keyPressed",bw);function bf(){ak.imageMode(ak.CENTER);z=curLoc=-1;for(var bA=0;bA<aK.size();bA++){var bC=aK.get(bA);if(bC.x<aV+10&&bC.x>F-10&&bC.y<aS+15&&bC.y>C-15&&aP.get(bC.type).width>0){var bz=ak.map(bC.x,F,aV,0,Q);var bD=ak.map(bC.y,C,aS,0,aQ);var bB=aP.get(bC.type);if(a4&&bC._id==a4._id){curLoc=bA}else{if(ak.mouseX<bz+bB.width/2&&ak.mouseX>bz-bB.width/2&&ak.mouseY<bD+bB.height/2&&ak.mouseY>bD-bB.height/2&&(ak.mouseX<aj||ak.mouseX>v||ak.mouseY<ai||ak.mouseY>an)){z=bA}}ak.image(bB,bz,bD)}}}ak.addMethod(bg,"drawLocations",bf);function bq(){var bA=aK.get(z);ak.textSize(18);var bz=ak.textWidth(bA.title);ak.stroke(aB[bA.type]);ak.fill(0);ak.rectMode(ak.CORNERS);ak.rect(ak.mouseX,ak.mouseY-33,ak.mouseX+bz+12,ak.mouseY-7,10);ak.fill(aB[bA.type]);ak.textAlign(ak.LEFT,ak.TOP);ak.text(bA.title,ak.mouseX+6,ak.mouseY-30)}ak.addMethod(bg,"drawHoverInfo",bq);function bt(){var bB=aK.get(curLoc);ak.textSize(18);var bA=ak.textWidth(bB.title);ak.stroke(aB[bB.type]);ak.fill(0);ak.rectMode(ak.CENTER);var bz=ak.map(bB.x,F,aV,0,Q);var bC=ak.map(bB.y,C,aS,0,aQ)-(aP.get(bB.type).height/2)-20;ak.rect(bz,bC,bA+12,26,10);ak.fill(aB[bB.type]);ak.textAlign(ak.LEFT,ak.TOP);ak.text(bB.title,bz-bA/2,bC-10)}ak.addMethod(bg,"drawCurrentInfo",bt);function bn(){bg.ox=ak.mouseX;bg.oy=ak.mouseY;bg.ocx=aT;bg.ocy=aR;bg.ominx=F;bg.ominy=C;bg.opressed=true}ak.addMethod(bg,"mousePressed",bn);function by(){if(bg.opressed){aT=bg.ocx-(ak.mouseX-bg.ox);aR=bg.ocy-(ak.mouseY-bg.oy);if(aT>a2-ar/2){aT=a2-ar/2}if(aT<ar/2){aT=ar/2}if(aR<aa/2){aR=aa/2}if(aR>az-aa/2){aR=az-aa/2}ad=ak.map(aT,0,a2,0,284);ac=ak.map(aR,0,az,0,270);bg.$self.setMins()}}ak.addMethod(bg,"mouseDragged",by);function bb(){F=ak.map(aT-ar/2,0,a2,531.749,531.749+853);aV=ak.map(aT+ar/2,0,a2,531.749,531.749+853);C=ak.map(aR-aa/2,0,az,231.083,231.083+810);aS=ak.map(aR+aa/2,0,az,231.083,231.083+810)}ak.addMethod(bg,"setMins",bb);function bx(){bg.opressed=false}ak.addMethod(bg,"mouseReleased",bx);function bp(){bg.opressed=false}ak.addMethod(bg,"mouseOut",bp);function bh(){be();bg.miniNYC=ak.loadImage("http://localhost:8888/miniNYC.png");bg.ox=bg.oy=-1;bg.$self.prep()}function bs(){if(arguments.length===0){bh.apply(bg,arguments)}else{be()}}bs.apply(null,arguments)}return a8})();ak.Map=I;var N=(function(){function a8(){var bc=this;var bf={$upcast:bc};function be(){k.apply(bf,arguments);if(!("$self" in bf)){ak.extendClassChain(bf)}}bc.play=false;function ba(){return bc.play}ak.addMethod(bc,"paused",ba);function bi(){if(bf.pressed()){bc.invert=true;bc.pressedHere=true}}ak.addMethod(bc,"mousePressed",bi);function bg(){if(bf.pressed()&&bc.pressedHere){bc.invert=true}else{bc.invert=false}}ak.addMethod(bc,"mouseDragged",bg);function bd(){if(bc.invert&&bc.pressedHere){if(p==al&&started){song.togglePause()}else{if(p==a3){if(aU.getPlayerState()==2){aU.playVideo()}else{aU.pauseVideo()}}}bc.invert=false}bc.pressedHere=false}ak.addMethod(bc,"mouseReleased",bd);function a9(){if(p==al&&started){if(song!=null&&song.playState==1){if(song.paused){if(!O){bc.play=true}}else{bc.play=false}}else{bc.play=true}}else{if(p==a3){if(aU.getPlayerState()==2||aU.getPlayerState()==-1){if(!O){bc.play=true}}else{bc.play=false}}}}ak.addMethod(bc,"update",a9);function bh(){if(bc.invert){ak.fill(255);ak.noStroke()}else{ak.noFill();if(bf.pressed()){ak.stroke(255)}else{ak.noStroke()}}ak.rect(bc.x-bc.hw,bc.y-bc.hh,bc.x+bc.hw,bc.y+bc.hh);if(bc.invert){ak.fill(0);ak.noStroke()}else{ak.fill(255);ak.noStroke()}if(bc.play){ak.triangle(bc.x-bc.hw/2,bc.y-bc.hh/2,bc.x-bc.hw/2,bc.y+bc.hh/2,bc.x+bc.hw/2,bc.y)}else{ak.rect(bc.x-bc.hw/2,bc.y-bc.hh/2,bc.x-1,bc.y+bc.hh/2);ak.rect(bc.x+bc.hw/2,bc.y-bc.hh/2,bc.x+1,bc.y+bc.hh/2)}}ak.addMethod(bc,"draw",bh);function bj(bl,bn,bk,bm){be(bl,bn,bk,bm);bc.play=true}function bb(){if(arguments.length===4){bj.apply(bc,arguments)}else{be()}}bb.apply(null,arguments)}ak.extendStaticMembers(a8,k);a8.$base=k;return a8})();ak.Play=N;var R=(function(){function a8(){var ba=this;var bd={$upcast:ba};function bc(){k.apply(bd,arguments);if(!("$self" in bd)){ak.extendClassChain(bd)}}ba.invert=false;ba.pressed=false;function bg(){if(bd.pressed()){ba.invert=true;ba.pressedHere=true}}ak.addMethod(ba,"mousePressed",bg);function be(){if(bd.pressed()&&ba.pressedHere){ba.invert=true}else{ba.invert=false}}ak.addMethod(ba,"mouseDragged",be);function bb(){if(ba.invert&&ba.pressedHere){P();ba.invert=false}ba.pressedHere=false}ak.addMethod(ba,"mouseReleased",bb);function bf(){if(ba.invert){ak.fill(255);ak.noStroke()}else{if(bd.pressed()){ak.textSize(14);var bi=ak.textWidth("Next Video");ak.fill(0);ak.stroke(255);ak.rect(ba.x-bi/2-3,ba.y+15,ba.x+bi/2+3,ba.y+35);ak.textAlign(ak.CENTER,ak.TOP);ak.fill(255);ak.text("Next Video",ba.x,ba.y+17);ak.noFill()}else{ak.noStroke();ak.noFill()}}ak.rect(ba.x-ba.hw,ba.y-ba.hh,ba.x+ba.hw,ba.y+ba.hh);if(ba.invert){ak.fill(0);ak.noStroke()}else{ak.fill(255);ak.noStroke()}ak.rect(ba.x-3,ba.y-ba.hh/2,ba.x-6,ba.y+ba.hh/2);ak.triangle(ba.x,ba.y-ba.hh/2,ba.x,ba.y+ba.hh/2,ba.x+ba.hw/2+1,ba.y)}ak.addMethod(ba,"draw",bf);function bh(bj,bl,bi,bk){bc(bj,bl,bi,bk);ba.invert=false}function a9(){if(arguments.length===4){bh.apply(ba,arguments)}else{bc()}}a9.apply(null,arguments)}ak.extendStaticMembers(a8,k);a8.$base=k;return a8})();ak.Forward=R;var w=(function(){function a8(){var bd=this;function bf(){ak.extendClassChain(bd)}bd.panel=a1;bd.margin=10;bd.slant=2;bd.num=0;bd.names=[" Current Info"," Color Mode","Sorting"];bd.currentColor=0;bd.pageToShow=0;bd.totalPagesToShow=1;function bj(){}ak.addMethod(bd,"mousePressed",bj);function a9(){}ak.addMethod(bd,"mouseClicked",a9);function bh(){bd.$self.drawControl();if(!a4){bd.$self.printNoSong()}else{bd.$self.printLocation()}}ak.addMethod(bd,"draw",bh);function bl(){ak.fill(0);ak.strokeWeight(2);ak.stroke(255);ak.rectMode(ak.CORNERS);ak.rect(aj,aI,v+1,u);ak.textSize(15);ak.rectMode(ak.CORNERS);ak.noFill();ak.rect(aj,an,v+1,u)}ak.addMethod(bd,"drawControl",bl);function bn(){if(a4&&a4.list){while(bd.pageToShow*vidsToShow>=a4.list.length){bd.pageToShow--}bd.totalPagesToShow=ak.ceil(a4.list.length/vidsToShow)}}ak.addMethod(bd,"resetSize",bn);function bi(){bd.pageToShow=0}ak.addMethod(bd,"resetPage",bi);function bk(){bd.pageToShow++}ak.addMethod(bd,"nextPage",bk);function bg(){bd.pageToShow--}ak.addMethod(bd,"previousPage",bg);function bm(){if(a4&&a4.list){while(playingVideo>=(bd.pageToShow+1)*vidsToShow){bd.pageToShow++}}}ak.addMethod(bd,"setToRightPage",bm);function be(){ak.textAlign(ak.LEFT,ak.TOP);ak.textSize(22);ak.fill(aB[a4.type]);i(a4.title,aj+21,aI+10,240,0,22,8);ak.fill(255);ak.textSize(16);j=-1;if(a4.list){var bp=ak.min(vidsToShow,a4.list.length-bd.pageToShow*vidsToShow);var bq=bd.pageToShow*vidsToShow;for(var bo=bq;bo<bq+bp;bo++){if(bo==playingVideo){ak.fill(aB[a4.type]);i(a4.list[bo].title,aj+30,aI+35+(bo-bq)*22,238,aB[a4.type],30,13);ak.fill(255)}else{if(ak.mouseX>aj+28&&ak.mouseY<aI+35+(bo-bq+1)*22&&ak.mouseY>aI+35+(bo-bq)*22){ak.fill(aB[a4.type]);i(a4.list[bo].title,aj+30,aI+35+(bo-bq)*22,238,aB[a4.type],30,13);j=bo;ak.fill(255)}else{i(a4.list[bo].title,aj+30,aI+35+(bo-bq)*22,238,ak.color(255),30,13)}}}if(vidsToShow<a4.list.length){ak.textSize(14);ak.text(bd.pageToShow+1+"/"+bd.totalPagesToShow,v-46,aI+30+vidsToShow*22);if(bd.pageToShow>0&&ak.mouseX>v-64&&ak.mouseX<v-46&&ak.mouseY<aI+43+vidsToShow*22&&ak.mouseY>aI+35+vidsToShow*22){ak.fill(ak.color(255,182,0));ak.text((new ak.Character("<")),v-58,aI+30+vidsToShow*22);ak.text((new ak.Character("<")),v-64,aI+30+vidsToShow*22);ak.fill(255);q=true}else{q=false;ak.text((new ak.Character("<")),v-58,aI+30+vidsToShow*22);ak.text((new ak.Character("<")),v-64,aI+30+vidsToShow*22)}if(bd.pageToShow<a4.list.length/vidsToShow-1&&ak.mouseX>v-23&&ak.mouseX<v-7&&ak.mouseY<aI+43+vidsToShow*22&&ak.mouseY>aI+35+vidsToShow*22){ak.fill(ak.color(255,182,0));ak.text((new ak.Character(">")),v-22,aI+30+vidsToShow*22);ak.text((new ak.Character(">")),v-16,aI+30+vidsToShow*22);ak.fill(255);ap=true}else{ap=false;ak.text((new ak.Character(">")),v-22,aI+30+vidsToShow*22);ak.text((new ak.Character(">")),v-16,aI+30+vidsToShow*22)}}}else{ak.text(a4.info,aj+30,aI+35,238,v-aj+20)}}ak.addMethod(bd,"printLocation",be);function bc(){ak.textAlign(ak.LEFT);ak.fill(255);ak.textSize(16);ak.text("Welcome to RapCities! Here you can explore how the sound of Hip-Hop and Rap changes from neighborhood to neighborhood in New York City!\n\nIf you find an artist you want to check out, just click on their icon, and you'll get to sample some of their most popular tunes.\n\n",aj+20,aI+35,v-aj-40,aQ-aI)}ak.addMethod(bd,"printNoSong",bc);function ba(bq,bp){bf();aj=bq;ai=bp;M=57;aI=ai;v=Q-SPLdistanceX;q=ap=false;if(aQ<870){var bo=870;var br=0;while(bo>aQ&&br<5){bo-=22;br++}u=ai+558-M-br*22;$("#dialogWindow").css("top",353-br*22-M);vidsToShow=10-br;E=u-18}else{u=ai+558-M}an=u+270;bd.num=bd.names.length;ak.textSize(16)}function bb(){if(arguments.length===2){ba.apply(bd,arguments)}else{bf()}}bb.apply(null,arguments)}return a8})();ak.SidePane=w;var o=(function(){function a8(){var bd=this;function bb(){ak.extendClassChain(bd)}bd.play=null;bd.ffwd=null;bd.pressedInSeekBar=false;bd.onVol=false;bd.onVolGen=false;bd.volDragged=false;bd.songPausedToBeginWith=false;bd.stillWithinSeekBar=false;bd.totTime=null;bd.total=0;function ba(){if(p==a3||(p==al&&started)){ak.rectMode(ak.CORNERS);bd.play.update();bd.play.draw();bd.ffwd.draw();bd.$self.drawSeekBar();bd.$self.drawVolume();if(bd.onVolGen){bd.$self.drawVolumeSetter()}ak.rectMode(ak.CENTER);ak.ellipseMode(ak.CENTER_RADIUS)}}ak.addMethod(bd,"draw",ba);function bg(){bd.play.mousePressed();bd.ffwd.mousePressed();bd.$self.checkSeekBar();bd.$self.checkVol()}ak.addMethod(bd,"mousePressed",bg);function bp(){bd.play.mouseDragged();bd.ffwd.mouseDragged();bd.$self.dragSeekBar();bd.$self.dragVol()}ak.addMethod(bd,"mouseDragged",bp);function bq(){bd.play.mouseReleased();bd.ffwd.mouseReleased();bd.$self.releaseSeekBar();bd.$self.releaseVol()}ak.addMethod(bd,"mouseReleased",bq);function bh(){if(ak.mouseX>aq-10&&ak.mouseX<aq+2&&ak.mouseY>E-6&&ak.mouseY<E+6){return true}return false}ak.addMethod(bd,"onVolume",bh);function br(){if(ak.mouseX>aq-volS-10&&ak.mouseX<aq+20&&ak.mouseY>E-volY&&ak.mouseY<E+volY){return true}return false}ak.addMethod(bd,"onVolumeSetter",br);function a9(){if(bd.$self.onVolume()){bd.onVol=true;ak.stroke(255)}else{ak.noStroke();bd.onVol=false}ak.fill(255);ak.triangle(aq-10,E,aq,E-7,aq,E+7);ak.rect(aq-10,E+3,aq-3,E-3);ak.stroke(255);ak.strokeWeight(2);ak.noFill();ak.ellipseMode(ak.RADIUS);if(!a5){if(U>80){ak.arc(aq+6,E,12,12,-(ak.PI/3),ak.PI/3)}if(U>60){ak.arc(aq+5,E,9,9,-(ak.PI/3),ak.PI/3)}if(U>40){ak.arc(aq+4,E,6,6,-(ak.PI/3),ak.PI/3)}if(U>20){ak.arc(aq+3,E,3,3,-(ak.PI/3),ak.PI/3)}}else{ak.stroke(ak.color(255,0,0));ak.line(aq-9,E-8,aq+2,E+7)}if(bd.$self.onVolumeSetter()){bd.onVolGen=true}else{if(!bd.volDragged){bd.onVolGen=false}}}ak.addMethod(bd,"drawVolume",a9);function bl(){if(bd.onVol){bd.$self.toggleMute()}else{if(bd.onVolGen&&ak.mouseX>aq-volS-5&&ak.mouseX<aq-volS+5&&ak.mouseY>E-volY&&ak.mouseY<E+volY){bd.volDragged=true;U=(E+volY-ak.mouseY)/volD;if(p==al){song.setVolume(U)}else{if(p==a3){aU.setVolume(U)}}}}}ak.addMethod(bd,"checkVol",bl);function bs(){if(bd.volDragged){if(ak.mouseY>E+volY){U=0}else{if(ak.mouseY<E-volY){U=100}else{U=(E+volY-ak.mouseY)/volD}}if(p==al){song.setVolume(U)}else{if(p==a3){aU.setVolume(U)}}}}ak.addMethod(bd,"dragVol",bs);function bk(){if(bd.volDragged){bd.volDragged=false}}ak.addMethod(bd,"releaseVol",bk);function bf(){ak.stroke(255);ak.strokeWeight(2);ak.fill(0);ak.rect(aq-volS-5,E-volY,aq-volS+5,E+volY);if(U>0){if(a4){ak.fill(aB[a4.type])}else{ak.fill(ak.color(255,182,0))}ak.noStroke();ak.rect(aq-volS-4,E+volY-1,aq-volS+4,E+volY+1-U*volD)}}ak.addMethod(bd,"drawVolumeSetter",bf);function bc(){if(p==al&&started){song.toggleMute()}else{if(p==a3){if(aU.isMuted()){aU.unMute()}else{aU.mute()}}}a5=!a5}ak.addMethod(bd,"toggleMute",bc);function bm(){if((p==al&&started)||p==a3){if(ak.mouseX>aY&&ak.mouseX<seekRight&&ak.mouseY>E-10&&ak.mouseY<E+10){O=true;bd.stillWithinSeekBar=true;if((p==al&&song.paused)||(p==a3&&aU.getPlayerState()==2)){bd.songPausedToBeginWith=true}else{bd.songPausedToBeginWith=false}if(p==al){song.pause()}else{aU.pauseVideo()}}}}ak.addMethod(bd,"checkSeekBar",bm);function bo(){if(p==a3||(p==al&&started)){if(O){if(ak.mouseX>aY&&ak.mouseX<seekRight&&ak.mouseY>E-10&&ak.mouseY<E+10){var bu=0;if(p==al){if(song!=null&&song.readyState==1){bu=song.durationEstimate}else{if(song!=null&&song.readyState==3){bu=song.duration}}var bt=ak.__int_cast(ak.map(ak.mouseX,aY,seekRight,0,bu));if(!bd.songPausedToBeginWith){song.resume()}song.setPosition(bt)}else{var bt=ak.__int_cast(ak.map(ak.mouseX,aY,seekRight,0,aU.getDuration()));X.setTimePos(ak.floor(bt));aU.seekTo(bt,true);if(!bd.songPausedToBeginWith){aU.playVideo()}}}O=false;bd.stillWithinSeekBar=false;if(!bd.songPausedToBeginWith){if(p==al){song.resume()}else{aU.playVideo()}}}}}ak.addMethod(bd,"releaseSeekBar",bo);function bi(){if(p==a3||(p==al&&started)){if(O){if(ak.mouseX>aY&&ak.mouseX<seekRight&&ak.mouseY>E-10&&ak.mouseY<E+10){bd.stillWithinSeekBar=true}else{bd.stillWithinSeekBar=false}}}}ak.addMethod(bd,"dragSeekBar",bi);function bj(){ak.stroke(255);ak.strokeWeight(3);if(p==a3&&aU.getPlayerState()==-1){ak.fill(255);ak.textSize(19);ak.textAlign(ak.LEFT,ak.CENTER);ak.text("-:--/-:--",au-28-ae,E)}if((p==al&&song!=null&&song.readyState==1)||p==a3&&aU.getPlayerState()==3){ak.strokeWeight(1);ak.line(aY,E,seekRight,E);ak.strokeWeight(3);var bt=0;if(p==al){bt=ak.map(song.bytesLoaded,0,song.bytesTotal,aY,seekRight)}else{bt=ak.map(aU.getVideoBytesLoaded(),0,aU.getVideoBytesTotal(),aY,seekRight)}if(bt>=0){ak.line(aY,E,bt,E)}}else{ak.line(aY,E,seekRight,E)}if((p==al&&song!=null&&(song.readyState==1||song.readyState==3))||(p==a3&&aU.getPlayerState()>0)){var bu=null;if(!O||!bd.stillWithinSeekBar){var bt=0;if(p==al){if(song.readyState==1){bd.total=song.durationEstimate;bd.totTime=aM(bd.total/1000)}else{if(song.readyState==3){bd.total=song.duration;bd.totTime=aM(bd.total/1000)}}bu=aM(song.position/1000);bt=ak.map(song.position,0,bd.total,aY,seekRight)}else{if(p==a3){bd.total=aU.getDuration();bd.totTime=aM(bd.total);X.setCurTime(aU.getCurrentTime());bu=aM(aU.getCurrentTime());bt=ak.map(aU.getCurrentTime(),0,bd.total,aY,seekRight)}}if(bt>=0){ak.line(bt,E-10,bt,E+10)}}else{ak.line(ak.mouseX,E-10,ak.mouseX,E+10);var bv=ak.map(ak.mouseX,aY,seekRight,0,bd.total);if(p==al){bv/=1000}bu=aM(bv)}ak.fill(255);ak.textSize(15);ak.textAlign(ak.LEFT,ak.CENTER);ak.text(bu+"/"+bd.totTime,au-30-ae,E)}ak.strokeWeight(1)}ak.addMethod(bd,"drawSeekBar",bj);function be(){bb();aA=aj;au=v;n=u-230;aW=u;ae=ak.textWidth("0:00/0:00");aY=aj+95;E=u-18;bd.play=new N(aj+72,E,10,10);bd.ffwd=new R(v-20,E,10,10);aq=aj+40;volY=15;volD=0.3;volS=20;seekRight=v-40-ae;ak.textSize(15)}function bn(){if(arguments.length===0){be.apply(bd,arguments)}else{bb()}}bn.apply(null,arguments)}return a8})();ak.Current=o;var ay=null;var B=null;var V=null;var l=null;var T=null;var X=null;var ag=null,W=null;var Q=0,aQ=0;var a2=0,az=0;var an=0;var av=0;var ar=0,aa=0,aF=0,aE=0;function aC(){Q=ak.max(700,$(window).width());aQ=ak.max(770,$(window).height());logo=ak.loadImage("http://localhost:8888/logo");$("#parent").css("width",Q).css("height",aQ);if(Q==700||aQ==770){$("body").css("overflow","visible")}SPLdistanceX=20;SPLdistanceY=30;az=950*8;a2=1000*8;am();ab=new ak.ArrayList();vidsToShow=10;artmode=false;ak.size(Q,aQ);ak.frameRate(30);ak.smooth();ak.rectMode(ak.CORNERS);ak.ellipseMode(ak.CENTER_RADIUS);ay=ak.createFont("Arial",13);ak.textFont(ay);ak.colorMode(ak.RGB);B=new ak.HashMap();l=new w(Q-SPLdistanceX-284,SPLdistanceY);toolBox=new Z();V=new o();T=new I();T.setUpLocations();ag=new Array(8);W=new Array(8);artgrid=new Array(8);artgridLoad=new Array(8);for(var a9=0;a9<8;a9++){ag[a9]=new Array(8);W[a9]=new Array(8);artgrid[a9]=new Array(8);artgridLoad[a9]=new Array(8);for(var a8=0;a8<8;a8++){W[a9][a8]=false;artgridLoad[a9][a8]=false}}X=new at();t=ak.loadImage("http://localhost:8888/facebook");aZ=ak.loadImage("http://localhost:8888/streetCoins.jpg");af=ak.loadImage("http://localhost:8888/exit.png");m=ak.loadImage("http://localhost:8888/heartbasket.png");aX=ak.loadShape("http://localhost:8888/heart.svg");A=ak.loadShape("http://localhost:8888/greyHeart.svg");f=ak.loadImage("http://localhost:8888/wikibio.png")}ak.setup=aC;function d(bb,a9){if(bb!=Q||a9!=aQ){Q=bb;aQ=a9;$("#parent").css("width",bb).css("height",a9);ak.size(Q,aQ);ar=Q;aa=aQ;aj=Q-SPLdistanceX-284;toolLeft=Q/2-toolWidth/2;v=Q-SPLdistanceX;if(aQ<870){var a8=870;var ba=0;while(a8>aQ&&ba<5){a8-=22;ba++}u=ai+558-57-ba*22;an=u+270;vidsToShow=10-ba;E=u-18;$("#dialogWindow").css("top",353-ba*22-57)}else{u=ai+558-57;an=u+270;vidsToShow=10;E=u-18;$("#dialogWindow").css("top",353-57)}l.resetSize();aF=ak.map(ar,0,a2,0,284);aE=ak.map(aa,0,az,0,270);T.setMins();aq=aj+40;V.play.newPos(aj+72,E);V.ffwd.newPos(v-20,E);aY=aj+95;aq=aj+40;seekRight=v-40-ae;aA=aj;au=v;n=u-230;aW=u}}ak.setUpSize=d;var aX=null,A=null;var aZ=null,t=null,m=null,af=null,f=null;function ax(){T.draw();ak.imageMode(ak.CORNER);ak.image(logo,0,0);if(curLoc>-1){T.drawCurrentInfo()}l.draw();toolBox.draw();V.draw();if(z>-1){T.drawHoverInfo()}}ak.draw=ax;var j=-1;var z=-1;function y(){if(z>=0){a4=aK.get(z);playingVideo=0;l.resetSize();l.resetPage();r()}else{if(j>=0){playingVideo=j;r()}else{if(toolHover>=0){toolBox.mouseClicked()}else{if(ap){l.nextPage()}else{if(q){l.previousPage()}}}}}}ak.mouseClicked=y;function aG(){if(ak.mouseY<aW&&ak.mouseY>n&&ak.mouseX<au&&ak.mouseX>aA){V.mousePressed()}else{if(ak.mouseX>aj&&ak.mouseX<v&&ak.mouseY>ai&&ak.mouseY<an){if(ak.mouseY<u){l.mousePressed()}else{T.miniMousePressed()}}else{T.mousePressed()}}}ak.mousePressed=aG;function aD(){V.mouseDragged();T.mouseDragged();T.miniMouseDragged()}ak.mouseDragged=aD;function H(){T.mouseOut();V.mouseReleased()}ak.mouseOut=H;function a(){V.mouseReleased();T.mouseReleased();T.miniMouseReleased()}ak.mouseReleased=a;var a4=null;var aP=new ak.HashMap();var aB=[];var aK=new ak.ArrayList();var b=true;function a7(){b=true}ak.focus=a7;function L(){b=false}ak.unfocus=L;function ao(){if(X.exists&&a4){X.resetCurCount(true);D()}}ak.unload=ao;function aJ(){if(a4){D()}ak.link("http://localhost:8888/auth/facebook")}ak.facebookRegister=aJ;function D(){var a8={lastLocation:a4._id};if(a4.list){a8.lastRID=a4.list[playingVideo].RID}$.get("http://localhost:8888/user/lastLocation",a8)}ak.lastLocation=D;var aH=false;var aO=false;function K(){T.keyPressed();if(ak.key==(new ak.Character("a"))){aH=true;aO=false;artmode=false}else{if(ak.key==(new ak.Character("r"))&&aH){aO=true;artmode=false}else{if(ak.key==(new ak.Character("t"))&&aH&&aO){artmode=true;alert("you have found the secret artmode! congrats!")}else{artmode=false}}}}ak.keyPressed=K;var F=0,C=0,aV=0,aS=0;var ad=0,ac=0,aT=0,aR=0;function Y(){if(playingVideo<a4.list.length-1){playingVideo++;r()}else{a6()}}ak.createNext=Y;var ab=null;function a6(){var ba=false;for(var a8=0;a8<ab.size();a8++){if(ab.get(a8)==a4._id){ba=true;break}}if(!ba){ab.add(a4._id)}for(var a8=0;a8<aK.size();a8++){var a9=aK.get(a8);if(a9.x>F&&a9.x<aV&&a9.y>C&&a9.y<aS&&!ak.__contains(ab,a9._id)){a4=a9;playingVideo=0;r()}}}ak.nextLocation=a6;function S(a9,a8){this.length=a9;this.index=a8}function i(bd,bh,bf,bg,a9,bk,a8){if(ak.textWidth(bd)>bg){var ba=0;if(a8){ba=a8}var bi=B.get(bd+ak.textWidth(bd));if(bi==null){bi=new S(0,0);B.put(bd+ak.textWidth(bd),bi)}var bc=bi.index;var be=bd.length;if(bi.length>=ak.textWidth(bd.charAt(bc))){if(bc<be-1){bi.index++;bc++;bi.length=0}else{bi.index=bc=0;bi.length=-40}}var bj=ak.textWidth(bd.charAt(bc))-bi.length;bc++;while(bj<bg-ba&&bc<be){bj+=ak.textWidth(bd.charAt(bc));bc++}ak.text(bd.substring(bi.index,bc),bh-bi.length,bf);if(bc==be){bj+=40;var bb=0;while(bj<bg-ba){bj+=ak.textWidth(bd.charAt(bb));bb++}ak.text(bd.substring(0,bb),bh+ak.textWidth(bd.substring(bi.index,bc))-bi.length+40,bf)}ak.noStroke();ak.fill(0);ak.rectMode(ak.CORNERS);ak.rect(bh-ak.textWidth((new ak.Character("W"))),bf+bk,bh,bf);ak.rect(bh+bg,bf,bh+bg+ak.textWidth((new ak.Character("W"))),bf+bk);ak.fill(a9);bi.length++;B.put(bd+ak.textWidth(bd),bi)}else{ak.text(bd,bh,bf)}}ak.checkText=i;var a1=0;var s=1;var ap=false,q=false;var aN=0;var ai=0,aj=0,u=0,v=0,M=0,aI=0;var O=false;var U=50;var a5=false;var ae=0,aY=0,aq=0;var au=0,aA=0,n=0,aW=0,E=0;function aM(ba){var a9=ak.__int_cast((ba%60));var a8=ak.__int_cast(((ba%3600)/60));var bb=null;if(a9==0){bb="00"}else{if(a9<10){bb="0"+a9}else{bb=a9}}return(a8+":"+bb)}ak.makeTime=aM;function P(){if(isPlaylist&&++curPos<X.favorites.length){aL(curPos)}else{if(a4.list&&playingVideo<a4.list.length-1){playingVideo++;r();l.setToRightPage()}else{a6()}}}ak.videoEnded=P;function am(){$("#ytplayer").html('<script type="text/javascript">var params = { allowScriptAccess: "always" };var atts = { id: "YouTubeP" };swfobject.embedSWF("http://www.youtube.com/apiplayer?enablejsapi=1&version=3", "ytplayer", "283", "200", "8", null, null, params, atts);<\/script>')}ak.togglePlayer=am;var aU=null;var p=false;var al=1;var a3=2;function aw(){aU=document.getElementById("YouTubeP");p=a3;aU.setVolume(U);if(aK.size()>0){ah()}}ak.prepPlayer=aw;var h="nL3IpxX2XB";var J=0;function ah(){var bb=ak.__split(window.location.pathname,(new ak.Character("/")));var a8=null,bc=null;if(bb[1]=="l"){a8=bb[2];bc=bb[3]}else{a8=h;bc=J}for(var ba=0;ba<aK.size();ba++){if(aK.get(ba)._id==a8){a4=aK.get(ba);if(bc&&a4.list){for(var a9=0;a9<a4.list.length;a9++){if(a4.list[a9].RID==bc){playingVideo=a9;e(a4.x,a4.y);r();l.resetSize();l.setToRightPage();break}}}else{playingVideo=0;e(a4.x,a4.y);r();l.resetSize();l.setToRightPage()}break}}}ak.startMusic=ah;function e(a8,a9){aT=ak.map(a8,531.749,531.749+853,0,a2);aR=ak.map(a9,231.083,231.083+810,0,az);ad=ak.map(aT,0,a2,0,284);ac=ak.map(aR,0,az,0,270);T.setMins()}ak.setNewMapLocation=e;var g=0;function c(){for(var a8=0;a8<X.favorites.length;a8++){if(a4._id==X.favorites[a8].locationID){if(a4.list&&playingVideo==X.favorites[a8].RID){a4.list[playingVideo].fav=true;break}else{if(a4.ytid){a4.fav=true;break}}}}}ak.checkFav=c;function r(a8,a9){if(!X.exists){if(!g){$("#interactiveDialog").html($("#welcome1").html()).dialog({width:540}).dialog({height:300}).dialog("open")}g=(++g)%4}else{X.resetCurCount()}if(a4.list&&a4.list.length>0){aU.loadVideoById(a4.list[playingVideo].ytid);if(X.favorites){c()}$.ajax({url:"http://localhost:8888/loc/view",data:{_id:a4._id,position:playingVideo,city:"NYC"}});a0(a4._id,a4.title,a4.list[playingVideo].RID,a4.list[playingVideo].title)}else{if(a4.ytid){if(X.favorites){c()}aU.loadVideoById(a4.ytid);$.ajax({url:"http://localhost:8888/loc/view",data:{_id:a4._id,city:"NYC"}});a0(a4._id,a4.title)}}if(a8){isPlaylist=true;curPos=a9}else{isPlaylist=false}}ak.loadVideo=r;function aL(bc){var bb=null;var ba=X.favorites[bc].locationID;if(a4&&ba==a4._id){bb=false}else{bb=true}for(var a9=0;a9<aK.size();a9++){if(ba==aK.get(a9)._id){a4=aK.get(a9);aT=ak.map(a4.x,531.749,531.749+853,0,a2);aR=ak.map(a4.y,231.083,231.083+810,0,az);ad=ak.map(aT,0,a2,0,284);ac=ak.map(aR,0,az,0,270);T.setMins();if(X.favorites[bc].RID&&a4.list){for(var a8=0;a8<a4.list.length;a8++){if(a4.list[a8].RID==X.favorites[bc].RID){playingVideo=a8;r(true,bc);if(bb){l.resetSize();l.resetPage();l.setToRightPage()}}}}else{playingVideo=0;r(true,bc);if(bb){l.resetSize();l.resetPage();l.setToRightPage()}}}}}ak.playVideo=aL;function x(bb,a9){var a8=ba(X.favorites,bb,a9);$("#overlay").html(a8).dialog("open");function ba(bg,bj,bf){var bi=null,bd=null;if(bf){bd=" &#x25B2;"}else{bd=" &#x25BC;"}var bk='<table id="userFavs"><thead><tr><td></td><td><a href="javascript:void(0)" onclick="showAndFillOverlay(\'locTitle\',';if(bj=="locTitle"){bk+=!bf;bi=bd}else{bk+=true;bi=""}bk+=",'"+X.favID+"')\">Video"+bi+"</a></td>";bk+='<td><a href="javascript:void(0)" onclick="showAndFillOverlay(\'date\',';if(bj=="date"){bk+=!bf;bi=bd}else{bk+=true;bi=""}bk+=",'"+X.favID+"')\">Date"+bi+"</a></td></tr></thead><tbody>";bg.sort(function(bm,bl){var bn=null;var bp=null;var bo=null;switch(bj){case"locTitle":bp=bm.locTitle;bo=bl.locTitle;break;case"date":bp=bm.date;bo=bl.date;break}if(bp>bo){bn=1}else{if(bp<bo){bn=-1}else{bn=0}}if(bf){return bn}else{return bn*-1}});for(var bh=0;bh<bg.length;bh++){var bc=bg[bh];var be=new Date(bc.date);bk+='<tr><td><a href="javascript:void(0)" onclick="toggleFav(this, \''+bc.locationID+"','"+bc.RID+"','"+X.favID+'\')"><img src="http://localhost:8888/heart.svg" width="20" height="20" border="0" /></a></td>';bk+='<td><a href="javascript:void(0)" onclick="playVideo('+bh+')">'+bc.locTitle;if(bc.itemTitle){bk+='</a><br />&nbsp;-&nbsp;&nbsp;<a href="javascript:void(0)" onclick="playVideo('+bh+')">'+bc.itemTitle}bk+="</a></td>";bk+="<td>"+(be.getMonth()+1)+"/"+be.getDate()+"/"+be.getFullYear()+"</td>";bk+="</tr>"}bk+="</tbody></table>";return bk}}ak.showFavorites=x;function a0(bc,bd,a9,bb){var ba="RapCities Alpha - "+bd;if(bb){ba+=" - - "+bb}document.title=ba;var a8="http://localhost:8888/l/"+bc;if(a9){a8+="/"+a9}window.history.pushState(ba,null,a8)}function G(){if(a4.bio){$("div#biolog").html(a4.bio);if(!$("div#biolog").dialog("isOpen")){$("div#biolog").dialog("open")}}}ak.showBio=G})
+);    
+});
+</script>
+    <script type="text/javascript">     
+      $(function() { //initiator constructor
+        $('#overlay').dialog({
+          autoOpen: false,
+          width: 'auto',
+          show: 'fade',
+          hide: 'fade',
+          maxHeight: '500',
+          close: function(event, ui) {
+            $('this').html("");
+          }
+        });
+      });
+
+	function showAndFillOverlay(sortBy, ascending, favID) {
+		var p = Processing.getInstanceById('canvas');
+		p.showFavorites(sortBy, ascending);
+	}
+
+	function toggleFav(element, loc, sub, playlist) { //toggle favs
+          if(($(element).html().indexOf("greyHeart") > -1)) { // simulate xor with rev to reverse value
+            $(element).html("<img src=\"http://localhost:8888/heart.svg\" width=\"20\" height=\"20\" border=\"0\" /\>");
+           	$.get('http://localhost:8888/user/addVideo', { "locationID": loc, "RID":sub, "playlistID":playlist});
+          } else {
+            $(element).html("<img src=\"http://localhost:8888/greyHeart.svg\" width=\"20\" height=\"20\" border=\"0\" /\>");
+            $.get('http://localhost:8888/user/removeVideo', { "locationID": loc, "RID":sub, "playlistID":playlist});
+          }
+      }
+
+      function playVideo(pos){
+        var p = Processing.getInstanceById('canvas');
+		p.playVideo(pos);
+      }      
+
+	  function showLegal(number){
+		$("div#legalDialog").dialog("open");
+		switch(number){
+			case 0: $("div#legalDialog").html($('#DMCA').html());
+		  		$('div#legalDialog', window.parent.document).scrollTop(0);
+				break;	 
+			case 1: $("div#legalDialog").html($('#TOS').html());
+			  	$('div#legalDialog', window.parent.document).scrollTop(0);
+				break;
+			case 2: $("div#legalDialog").html($('#PP').html());
+			  	$('div#legalDialog', window.parent.document).scrollTop(0);
+				break;
+			case 3: $("div#legalDialog").html($('#CU').html());
+				$('div#legalDialog', window.parent.document).scrollTop(0);
+				break;
+		}
+	  }
+
+    </script>
+	<script type="text/javascript">
+		function onYouTubePlayerReady(playerId){	document.getElementById('YouTubeP').addEventListener("onStateChange","onytplayerStateChange");
+		Processing.getInstanceById('canvas').prepPlayer();	
+		}
+
+		function onytplayerStateChange(newState) {
+		   if(newState == 0){
+			Processing.getInstanceById('canvas').videoEnded();
+		   }
+		}	
+	</script>
+	<script>
+	$(document).ready(function() {
+		$("div#biolog").dialog({
+			autoOpen: false,
+			resizable: false,
+			height: 360,
+			width: 385,
+			position: ['left','bottom'],
+			stack:false
+		});
+		$("div#legalDialog").dialog({
+			autoOpen: false,
+			resizable: false,
+			height: 500,
+			width: 500,
+			modal:true
+		});
+		$("div#interactiveDialog").dialog({
+			autoOpen: false,
+			resizable: false,
+			show: 'fade',
+	        hide: 'fade',
+			modal:false,
+			zIndex:3049
+		});
+		$('#streetCreditStore').dialog({
+			autoOpen:false,
+			resizable:false,
+			show:'fade',
+			hide:'fade',
+			width: 'auto',
+			modal:false,
+			zIndex:102
+		});	
+	});
+
+	$(window).resize(function(){
+		if($(window).width() < 700 || $(window).height() < 770){
+			var p = Processing.getInstanceById('canvas');
+			p.setUpSize(Math.max($(window).width(),700),Math.max(770,$(window).height()));
+			//$("#dialogWindow").css("position","fixed");
+			$("body").css("overflow","visible");
+		}
+		else{
+			var p = Processing.getInstanceById('canvas');
+			p.setUpSize($(window).width(),$(window).height());
+			$("body").css("overflow","hidden");
+			$("#parent").css("width",$(window).width()).css("height",$(window).height());
+		}
+	});
+
+	$(window).focus(function(){
+		var p = Processing.getInstanceById('canvas');
+		p.focus();
+	});
+	$(window).blur(function(){
+		var p = Processing.getInstanceById('canvas');
+		p.unfocus();
+	});
+	$(window).unload(function(){
+		var p = Processing.getInstanceById('canvas');
+		p.unload();
+	});
+	//show the next dialog for login
+	function nextWelcome(){
+	$("#interactiveDialog").html($('#welcome2').html()).dialog({width:570}).dialog({height:565}).dialog('open');
+	}
+	function register(){ //register the user in the site
+		var p = Processing.getInstanceById('canvas');
+		p.facebookRegister();
+	}
+	function noWelcome(){//disable future welcome screens
+		$.get('http://localhost:8888/user/noWelcome');
+		$("#interactiveDialog").dialog('close');
+	}
+	</script>
+  </head>
+  <body>
+    <div id="overlay" title="HeartBasket"></div>
+
+    <div id="parent">
+
+      <canvas id="canvas" data-processing-sources="http://localhost:8888/rapcities.pde">
+        <font size="10" color="white">Your browser doesn't support HTML5! Please
+          and use the latest version of Mozilla Firefox or Google Chrome.</font>
+      </canvas>
+	<div id="dialogWindow">
+		<div id="ytplayer">
+			<p>Loading Site <br /> <br /> If it takes forever, you probably don't have Flash Player 8+ and/or JavaScript enabled.</p>
+
+		</div>
+	</div>
+	<div id="streetCreditStore" title="It's a preview!" style="display:none"><img src="http://localhost:8888/storePreview.png" alt="Street Credit Store preview"/></div>
+	<div id="instructions" style="display:none"><br />RapCities is a video game-like experience built in a browser. You can move around the virtual city using your arrow keys, by clicking and dragging anywhere on the map, or by clicking somewhere on the mini-map at the bottom right-hand corner of the screen.<br /><br />You can click on any artist or venue in the virtual city, as well as almost every other icon and	object on the map.<br /><br /><br /><a href="javascript:void(0)" onclick="noWelcome()">Click here to disable this message in the future.</a></div>
+	<div id="welcome1" style="display:none"><a href="javascript:void(0)" onclick="nextWelcome()"><img class="whatisrc" src="http://localhost:8888/whatisRC.png" align="right" hspace="20" vspace="30" alt="What is RapCities?"/></a>Welcome to RapCities, the Internet's first virtual city of Hip	Hop music and culture. There are dozens of other artists and venues to check out in New York City. You can hang out here for as long as you like. When you are ready to delve deeper into Hip Hop culture in New York, click the big yellow button.</div>
+	<div id="welcome2" style="display:none">RapCities is a virtual city exploration game where you collect street credit as you uncover Hip Hop music and culture. It's completely free to play - you just gotta log in.<br /><br />
+Once logged in you can move around and explore the entire virtual New York — the first of many RapCities to be released. There are currently dozens of other clickable artists and	venues, with hundreds of other curated music videos, live performances, and interviews - all updated daily. Thousands of hours of entertainment—in New York City alone. In this constantly growing interactive world you will find the exact location of where everything in Hip Hop happens. Where artists grew up, and where concerts, live shows, famous parties, and moments of Hip Hop culture occur.<br /><br /><a href="javascript:void(0)" onclick="register()"><img id="welcomeFB" src="http://localhost:8888/welcomeFB.png" alt="Connect with Facebook"/></a></div>
+	<div id="CU" style="display:none"><b>Contact Us</b><br /> <br /><a href="mailto:info@rapcities.com?Subject=Site%20Contact%20Link">Send us an email by clicking here!</a>
+	</div>
+	<div id="PP" style="display:none"><b>Privacy Policy</b><br /><br />
+
+	<b>Your privacy is important to us! </b><br /><br />
+
+	Rapcities stores information that we collect through cookies, log files, and clear gifs to create a "profile" of your preferences. This statistical information may be used to help Rapcities provide tailored services and to improve the content of the site for you.<br /><br />
+
+	Giving us your personal data on this site is completely optional and will require you to setup an account with a password and an email address through Facebook and Facebook Connect. It is the user’s sole responsibility to familiarize themselves with and consent to the Terms of Service of the Facebook Platform (available at: http://www.facebook.com/legal/terms) that Rapcities uses to log you on to the site and to acquire your personal data. You may also submit additional personal information (including data on your profile and on message boards). Please remember that any information you submit becomes public information that can be viewed by others.<br /><br />
+
+	We may use the email address provided by you through Facebook Connect to contact you from time to time about offers, or other related services. We will NOT share your personally identifiable information (email address, first or last name, etc.) with ANY third-party or partner unless you explicitly request us to do so.<br /><br />
+
+	The Rapcities service may display links to third party sites. We advise you to check their terms of use and privacy policies before submitting your personal information to them.<br /><br />
+
+	Google, a third party vendor, may use cookies to serve advertisements on the Rapcities site. Google's use of the DART cookie enables it to serve ads to our users based on their visit to our site and other sites on the Internet. Users may opt out of the use of the DART cookie by visiting the Google ad and content network privacy policy.<br /><br />
+
+	We partner with ValueClick to serve ads and/or collect certain information when you visit our website. ValueClick may use cookies or web beacons to collect non-personally identifiable information during your visit to this website in order to help show advertisements on other websites likely to be more interesting to you. To learn more about this "behavioral advertising" practice or to opt-out of this use of your anonymous information, you can visit http://valueclickmedia.com/member_privacy.shtml  
+	</div>
+	<div id="TOS" style="display:none"><b>Your Acceptance</b><br /><br />
+
+	By using and/or visiting this website, including all content and functionality available through the Rapcities.com domain name, the Rapcities Website, Rapcities Player, Rapcities Encoder, other software, Website, or collectively “Rapcities”, you signify your agreement to these terms and conditions (the "Terms of Service"), and Rapcities’ privacy policy, incorporated here by reference, and any License agreements for software from Rapcities Inc., including but not limited to the Rapcities Player and Encoder, which you choose to install on your computer. If you do not agree to any of these terms, the Rapcities privacy notice, or the applicable software license agreements, please do not use Rapcities.<br /><br />
+
+	Although we may attempt to notify you when major changes are made to these Terms of Service, you should periodically review the most up-to-date version available on http://www. Rapcities.com/. Rapcities may, in its sole discretion, modify or revise these Terms of Service and policies at any time, and you agree to be bound by such modifications or revisions. Nothing in this Agreement shall be deemed to confer any third-party rights or benefits.<br /><br />
+
+	Rapcities does not host any audio, video, or collectively "multimedia" files. Rapcities aggregates certain content from the YouTube API. You need to become familiar with and agree to the YouTube terms of service notice found at http://www.youtube.com/t/terms, the YouTube privacy notice found at http://www.youtube.com/t/privacy and the YouTube Community Guidelines found at http://www.youtube.com/t/community_guidelines before using Rapcities.<br /><br /> 
+
+	These Terms of Service apply to all users of Rapcities, including users who are also contributors of multimedia content, information, and other materials or services on Rapcities. Rapcities includes the website and all other aspects, including but not limited to all products, software and services.<br /><br />
+
+	Rapcities may contain links to third party websites that are not owned or controlled by Rapcities. Rapcities has no control over, and assumes no responsibility for, the content, privacy policies, or practices of any third party websites. In addition, Rapcities will not and cannot censor or edit the content of any third-party site. By using Rapcities, you expressly relieve Rapcities from any and all liability arising from your use of any third-party website. Accordingly, we encourage you to read the terms and conditions and privacy policy of each other website that you visit.<br /><br />
+
+	You understand that when using the Rapcities Website, you will be exposed to User Submissions from a variety of sources, and that Rapcities is not responsible for the accuracy, usefulness, safety, or intellectual property rights of or relating to such User Submissions. You further understand and acknowledge that you may be exposed to User Submissions that are inaccurate, offensive, indecent, or objectionable, and you agree to waive, and hereby do waive, any legal or equitable rights or remedies you have or may have against Rapcities with respect thereto, and agree to indemnify and hold Rapcities, its Owners/Operators, affiliates, and/or licensors, harmless to the fullest extent allowed by law regarding all matters related to your use of the site.<br /><br />
+
+	You are responsible for any activity that occurs under your IP and/or User name. You are responsible for keeping your password secure. Rapcities will not be liable for your losses caused by any unauthorized use of your account; you may be liable for the losses of Rapcities or others due to such unauthorized use. You may not use Rapcities for any illegal or unauthorized purpose. All users agree to comply with all local laws regarding online conduct and acceptable content. You are solely responsible for your conduct and any data, text, information, screen names, graphics, photos, audio, videos, profiles, links (“content”) that you submit, post, and display on “Rapcities”, the Rapcities.com website, or other services including but not limited to the Rapcities Player. You agree not to circumvent, disable or otherwise interfere with security-related features of the Rapcities Website or features that prevent or restrict use or copying of any Content or enforce limitations on use of the Rapcities Website or the Content therein. You must not, in the use of Rapcities, violate any laws in your jurisdiction, or national, and international laws and regulations (including but not limited to copyright laws). Rapcities reserves the right to discontinue any aspect of our services at any time. Rapcities will terminate a User's access to its Website if, under appropriate circumstances, they are determined to be a repeat infringer.<br /><br />
+
+	<b>YouTube API Video Organization and Discovery</b><br /><br />
+
+	Video organization and discovery by cultural geography<br /><br />
+
+	Rapcities uses an innovative method of displaying information to make it easier for users to find and organize videos. Rapcities makes it possible for users to discover videos on the basis of cultural geography, and to organize them into unique cultural-geographic specific favorites lists (i.e., by neighborhood/city in which they were produced or with which they are associated).<br /><br />
+
+
+	<b>Warranty Disclaimer</b><br /><br />
+
+	YOU AGREE THAT YOUR USE OF RAPCITIES SHALL BE AT YOUR SOLE RISK. TO THE FULLEST EXTENT PERMITTED BY LAW, RAPCITIES, ITS OFFICERS, DIRECTORS, EMPLOYEES, AND AGENTS DISCLAIM ALL WARRANTIES, EXPRESS OR IMPLIED, IN CONNECTION WITH RAPCITIES AND YOUR USE THEREOF. RAPCITIES MAKES NO WARRANTIES OR REPRESENTATIONS ABOUT THE ACCURACY OR COMPLETENESS OF THIS SITE'S CONTENT OR THE CONTENT OF ANY SITES LINKED TO THIS SITE AND ASSUMES NO LIABILITY OR RESPONSIBILITY FOR ANY (I) ERRORS, MISTAKES, OR INACCURACIES OF CONTENT, (II) PERSONAL INJURY OR PROPERTY DAMAGE, OF ANY NATURE WHATSOEVER, RESULTING FROM YOUR ACCESS TO AND USE OF OUR WEBSITE, PLAYER, ENCODER, OR OTHER RAPCITIES SERVICES. (III) ANY UNAUTHORIZED ACCESS TO OR USE OF OUR SECURE SERVERS AND/OR ANY AND ALL PERSONAL INFORMATION AND/OR FINANCIAL INFORMATION STORED THEREIN, (IV) ANY INTERRUPTION OR CESSATION OF TRANSMISSION TO OR FROM OUR WEBSITE, (IV) ANY BUGS, VIRUSES, TROJAN HORSES, OR THE LIKE WHICH MAY BE TRANSMITTED TO OR THROUGH OUR WEBSITE BY ANY THIRD PARTY, AND/OR (V) ANY ERRORS OR OMISSIONS IN ANY CONTENT OR FOR ANY LOSS OR DAMAGE OF ANY KIND INCURRED AS A RESULT OF THE USE OF ANY CONTENT POSTED, EMAILED, TRANSMITTED, OR OTHERWISE MADE AVAILABLE VIA THE RAPCITIES WEBSITE, PLAYER, ENCODER, OR SOFTWARE, OR OTHER RAPCITIES SERVICES. RAPCITIES DOES NOT WARRANT, ENDORSE, GUARANTEE, OR ASSUME RESPONSIBILITY FOR ANY PRODUCT OR SERVICE ADVERTISED OR OFFERED BY A THIRD PARTY THROUGH THE RAPCITIES WEBSITE, PLAYER, ENCODER, OR SOFTWARE, OR OTHER RAPCITIES SERVICES, OR ANY HYPERLINKED WEBSITE OR FEATURED IN ANY BANNER OR OTHER ADVERTISING, AND RAPCITIES WILL NOT BE A PARTY TO OR IN ANY WAY BE RESPONSIBLE FOR MONITORING ANY TRANSACTION BETWEEN YOU AND THIRD-PARTY PROVIDERS OF PRODUCTS OR SERVICES. AS WITH THE PURCHASE OF A PRODUCT OR SERVICE THROUGH ANY MEDIUM OR IN ANY ENVIRONMENT, YOU SHOULD USE YOUR BEST JUDGMENT AND EXERCISE CAUTION WHERE APPROPRIATE.
+
+	<b>Limitation of Liability</b><br /><br />
+
+	IN NO EVENT SHALL RAPCITIES, ITS OFFICERS, DIRECTORS, EMPLOYEES, OR AGENTS, BE LIABLE TO YOU FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, PUNITIVE, OR CONSEQUENTIAL DAMAGES WHATSOEVER RESULTING FROM ANY (I) ERRORS, MISTAKES, OR INACCURACIES OF CONTENT, (II) PERSONAL INJURY OR PROPERTY DAMAGE, OF ANY NATURE WHATSOEVER, RESULTING FROM YOUR ACCESS TO AND USE OF OUR WEBSITE, SOFTWARE, PLAYER, ENCODER, OR OTHER RAPCITIES SERVICES. (III) ANY UNAUTHORIZED ACCESS TO OR USE OF OUR SECURE SERVERS AND/OR ANY AND ALL PERSONAL INFORMATION AND/OR FINANCIAL INFORMATION STORED THEREIN, (IV) ANY INTERRUPTION OR CESSATION OF TRANSMISSION TO OR FROM OUR WEBSITE, (IV) ANY BUGS, VIRUSES, TROJAN HORSES, OR THE LIKE, WHICH MAY BE TRANSMITTED TO OR THROUGH OUR WEBSITE BY ANY THIRD PARTY, AND/OR (V) ANY ERRORS OR OMISSIONS IN ANY CONTENT OR FOR ANY LOSS OR DAMAGE OF ANY KIND INCURRED AS A RESULT OF YOUR USE OF ANY CONTENT POSTED, EMAILED, TRANSMITTED, OR OTHERWISE MADE AVAILABLE VIA THE RAPCITIES WEBSITE, PLAYER, ENCODER, OR SOFTWARE, OR OTHER RAPCITIES SERVICES, WHETHER BASED ON WARRANTY, CONTRACT, TORT, OR ANY OTHER LEGAL THEORY, AND WHETHER OR NOT THE COMPANY IS ADVISED OF THE POSSIBILITY OF SUCH DAMAGES. THE FOREGOING LIMITATION OF LIABILITY SHALL APPLY TO THE FULLEST EXTENT PERMITTED BY LAW IN THE APPLICABLE JURISDICTION.<br /><br />
+	YOU SPECIFICALLY ACKNOWLEDGE THAT RAPCITIES SHALL NOT BE LIABLE FOR USER SUBMISSIONS OR THE DEFAMATORY, OFFENSIVE, OR ILLEGAL CONDUCT OF ANY THIRD PARTY AND THAT THE RISK OF HARM OR DAMAGE FROM THE FOREGOING RESTS ENTIRELY WITH YOU.<br /><br />
+
+	The Website is controlled and offered by Rapcities Inc. from its facilities in the United States of America. Rapcities makes no representations that the Rapcities Website is appropriate or available for use in other locations. Those who access or use the Rapcities Website from other jurisdictions do so at their own volition and are responsible for compliance with local law.<br /><br />
+
+	<b>Indemnity</b><br /><br />
+
+	You agree to defend, indemnify and hold harmless Rapcities, its officers, directors, employees and agents, from and against any and all claims, damages, obligations, losses, liabilities, costs or debt, and expenses (including but not limited to attorney's fees) arising from: (i) your use of and access to the Rapcities Website, Player, Encoder, software, or other Rapcities services; (ii) your violation of any term of these Terms of Service; (iii) your violation of any third party right, including without limitation any copyright, property, or privacy right; or (iv) any claim that one of your User Submissions caused damage to a third party. This defense and indemnification obligation will survive these Terms of Service and your use of the Rapcities Website.<br /><br />
+
+	<b>Ability to Accept Terms of Service</b><br /><br />
+
+	You affirm that you are either more than 18 years of age, or an emancipated minor, or possess legal parental or guardian consent, and are fully able and competent to enter into the terms, conditions, obligations, affirmations, representations, and warranties set forth in these Terms of Service, and to abide by and comply with these Terms of Service. In any case, you affirm that you are over the age of 13, as the Rapcities Website is not intended for children under 13. If you are under 13 years of age, then please do not use the Rapcities Website. <br /><br />
+
+	<b>Assignment</b><br /><br />
+
+	These Terms of Service, and any rights and licenses granted hereunder, may not be transferred or assigned by you, but may be assigned by Rapcities without restriction.<br /><br /></div>
+	<div id="DMCA" style="display:none">	<b>Digital Millennium Copyright Act - YouTube Content ("On-Demand")</b><br /><br />
+
+	All On-Demand streaming music, audio, video content and related services accessed through Rapcities is stored on YouTube’s servers, aggregated through the YouTube API and streamed through the YouTube chromeless player. YouTube LLC is fully compliant with the laws of the Digital Millennium Copyright Act. <br /><br />
+
+	A. If you are a copyright owner or an agent thereof and believe that any User Submission or other content infringes upon your copyrights, you may submit a notification pursuant to the Digital Millennium Copyright Act ("DMCA") by providing our Copyright Agent with the following information in writing (see 17 U.S.C 512(c)(3) for further detail): <br /><br />
+	<ul>
+	<li>A physical or electronic signature of a person authorized to act on behalf of the owner of an exclusive right that is allegedly infringed; </li>
+	<li>Identification of the copyrighted work claimed to have been infringed, or, if multiple copyrighted works at a single online site are covered by a single notification, a representative list of such works at that site; </li>
+	</UL>
+	<br /><br />
+	<ul>
+	<li>Identification of the material that is claimed to be infringing or to be the subject of infringing activity and that is to be removed or access to which is to be disabled and information reasonably sufficient to permit the service provider to locate the material; </li>
+	<li>Information reasonably sufficient to permit the service provider to contact you, such as an address, telephone number, and, if available, an electronic mail; </li>
+	<li>A statement that you have a good faith belief that use of the material in the manner complained of is not authorized by the copyright owner, its agent, or the law; and</li>
+	<li>A statement that the information in the notification is accurate, and under penalty of perjury, that you are authorized to act on behalf of the owner of an exclusive right that is allegedly infringed. </li> 
+	</UL>
+	<br /><br /> 
+
+	YouTube's designated Copyright Agent to receive notifications of claimed infringement is: Heather Gillette, 901 Cherry Ave., San Bruno, CA 94066, email: copyright@youtube.com, fax: 650-872-8513. For clarity, only DMCA notices should go to the Copyright Agent; any other feedback, comments, requests for technical support, and other communications should be directed to YouTube customer service through http://www.google.com/support/youtube. You acknowledge that if you fail to comply with all of the requirements of this Section, your DMCA notice may not be valid. <br /><br /> 
+
+	B. Counter-Notice. If you believe that your User Submission that was removed (or to which access was disabled) is not infringing, or that you have the authorization from the copyright owner, the copyright owner's agent, or pursuant to the law, to post and use the content in your User Submission, you may send a counter-notice containing the following information to the Copyright Agent: <br /><br />  
+	<ul>
+	<li>Your physical or electronic signature; </li>
+	<li>Identification of the content that has been removed or to which access has been disabled and the location at which the content appeared before it was removed or disabled;</li>
+	<li>A statement that you have a good faith belief that the content was removed or disabled as a result of mistake or a misidentification of the content; and</li>
+	<li>Your name, address, telephone number, and e-mail address, a statement that you consent to the jurisdiction of the federal court in San Francisco, California, and a statement that you will accept service of process from the person who provided notification of the alleged infringement. </li>
+	</UL>
+	<br /><br />  
+
+	If a counter-notice is received by the Copyright Agent, YouTube may send a copy of the counter-notice to the original complaining party informing that person that it may replace the removed content or cease disabling it in 10 business days. Unless the copyright owner files an action seeking a court order against the content provider, member or user, the removed content may be replaced, or access to it restored, in 10 to 14 business days or more after receipt of the counter-notice, at YouTube's sole discretion. <br /><br /> 
+
+	<b>Digital Millennium Copyright Act - Other Content ("Non-YouTube")</b><br /><br /> 
+
+	Rapcities does not store any audio-visual content for streaming or downloading on our servers. The Rapcities website, forums and software may contains links to user-submitted audio-visual content stored on third party servers. Rapcities Inc. is fully compliant with the laws of the Digital Millennium Copyright Act. <br /><br /> 
+
+	Please note that any claims against YouTube-related content must be made to YouTube itself (See <i>Digital Millennium Copyright Act – YouTube Content</i> above for details). Any DMCA claims sent to Rapcities that pertain to YouTube content will be ignored.<br /><br />  
+
+	If you believe that your work has been copied in a way that constitutes copyright infringement, or that your intellectual property rights have been otherwise violated, please provide a written document by regular Postal mail with the instructions given below. Rapcities will take all necessary actions to remove/delete material/links claimed to be the subject of infringing activity.<br /><br />  
+
+	<i>Understand that you will be held liable for damages if you falsify any activity, mislead or misrepresent yourself as the rightful copyright owner or representative thereof.</i><br /><br /> 
+
+	In the DMCA complaint claim please include the following in English:<br /><br />  
+	<ul>
+	<li>Describe and identify the copyrighted work claimed to have been infringed, or, if multiple copyrighted works at a single online site are covered by a single notification, a representative list of such works at that site. </li>
+	<li>A description of where the material that you claim is infringing is located within the Rapcities site/software, with enough detail that we are able to locate it. </li>
+	<li>Include your name, phone number, postal address, email address and any other company/record label information. </li> 
+	<li>Sign the document with your legal name.</li> 
+	<li>Understand, upon signing this document, you claim to be the owner of the copyrighted piece that is being infringed upon or are authorized to act on behalf of the owner of the copyright or other intellectual property interest. </li> 
+	</UL>
+	<br /><br /> 
+
+	Send the letter to the following address:<br /><br />  
+
+	Rapcities Inc. 
+	Attn: DMCA Complaints
+	16 Chauncy St. #52
+	Cambridge, MA 02138<br /><br />
+
+	<b>YouTube API Video Organization and Discovery</b><br /><br />
+
+	Video organization and discovery by cultural geography<br /><br />
+
+	Rapcities uses an innovative method of displaying information to make it easier for users to find and organize videos. Rapcities makes it possible for users to discover videos on the basis of cultural geography, and to organize them into unique cultural-geographic specific favorites lists (i.e., by neighborhood/city in which they were produced or with which they are associated).</div>
+	<div id="biolog" title="Artist Biography"></div>
+	<div id="legalDialog" title="Legal"></div>
+	<div id="interactiveDialog" title="Welcome to RapCities!"></div>
+	<div id="legalbottom">&copy; 2012 Rapcities Inc. All Rights Reserved. On-demand content powered by YouTube. | <a href="javascript:void(0)" onclick="showLegal(0)">DMCA</a> | <a href="javascript:void(0)" onclick="showLegal(1)">Terms of Service</a> | <a href="javascript:void(0)" onclick="showLegal(2)">Privacy Policy</a> | <a href="javascript:void(0)" onclick="showLegal(3)">Contact Us</a></div>
+      <div id='artist-info'>
+        <div id="top">
+          <div class='type' data-type='biographies'>Biographies</div>
+          <div class='type' data-type='blogs'>Blogs</div>
+          <div class='type' data-type='images'>Images</div>
+          <div class='type' data-type='news'>News</div>
+          <div class='type' data-type='videos'>Videos</div>
+          <div class='type' id='close'>Close</div>
+          <div class='clear'></div>
+        </div>
+        <div id="center">
+          <div id="biographies"></div>
+          <div id="blogs"></div>
+          <div id="images"></div>
+          <div id="news"></div>
+          <div id="videos"></div>
+        </div>
+        <div id="popup">
+          <div id="popup-nav">
+            <a id="popup-close" href="#">Close</a>
+            <a id="popup-url" href="#">Go to site</a>
+          </div>
+          <iframe id="popup-content" src="">
+        </div>
+        <div class="clear"></div>
+      </div>
+    </div>
+  </body>
+</html>
+	

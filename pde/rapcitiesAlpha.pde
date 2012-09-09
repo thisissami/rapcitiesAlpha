@@ -1,4 +1,4 @@
-/* @pjs preload="http://localhost:8888/heartbasket.png, http://localhost:8888/wikibio.png, http://localhost:8888/exit.png, http://localhost:8888/heart.svg, http://localhost:8888/greyHeart.svg, http://localhost:8888/facebook,http://localhost:8888/miniNYC.png,http://localhost:8888/logo";*/
+/* @pjs preload="http://localhost:8888/heartbasket.png, http://localhost:8888/streetCoins.jpg, http://localhost:8888/wikibio.png, http://localhost:8888/exit.png, http://localhost:8888/heart.svg, http://localhost:8888/greyHeart.svg, http://localhost:8888/facebook,http://localhost:8888/miniNYC.png,http://localhost:8888/logo";*/
 
 //the above code is used by processingjs to preload images
 
@@ -65,6 +65,7 @@ void setup(){
 	}
 	user = new User(); // user object! holds the user data.
 	facebook = loadImage("http://localhost:8888/facebook");
+	streetCoins = loadImage("http://localhost:8888/streetCoins.jpg")
 	logout = loadImage("http://localhost:8888/exit.png");
 	heartBasket = loadImage("http://localhost:8888/heartbasket.png");
 	heart = loadShape("http://localhost:8888/heart.svg");
@@ -122,7 +123,7 @@ void setUpSize(width,height){
 }
 
 PShapeSVG heart,greyHeart;
-PImage facebook,heartBasket,logout,wikibio;
+PImage streetCoins,facebook,heartBasket,logout,wikibio;
 
 //draw all the various things that get displayed in the app
 void draw(){
@@ -132,7 +133,7 @@ void draw(){
 	if(curLoc > -1)//draw currently playing location
 		nyc.drawCurrentInfo();
 	sidePane.draw();// draw the sidepane!
-	if(location && location.list && location.list.length)  
+//	if(location)  
 		toolBox.draw();
 	current.draw();
 	if(hoverLoc > -1)
@@ -205,48 +206,179 @@ var icons = new HashMap(); //icon images that correspond to the various types
 //var media = {}; // what type of media does each type contain? (for now all youtube videos)
 var colors = {}; //color of each type (as shown on minimap and as displayed in hovertext)
 var locations = new ArrayList(); //list of all the locations
-
+boolean focused = true;
+void focus(){
+	focused = true;
+}
+void unfocus(){
+	focused = false;
+}
+void unload(){
+	if(user.exists && location){
+		user.resetCurCount(true);//send SC info to server on unload of site
+		lastLocation();
+	}
+}
+void facebookRegister(){
+	if(location)
+		lastLocation();
+	link('http://localhost:8888/auth/facebook');
+}
+//send server location to load for next time
+void lastLocation(){
+	var sendata = {lastLocation:location._id};
+	if(location.list)
+		sendata.lastRID = location.list[playingVideo].RID;
+	$.get('http://localhost:8888/user/lastLocation',sendata);
+}
 /* class that deals with all the currently logged in user's information*/
 class User{
 	int streetCredit = 0; //total Street Credit available to this user
+	int curStreetCredit = 0; //street credit of current video
+	int curTimeTotal = 0; //time current video playing for so far
+	int curTime; //current time position
 	boolean exists = false; //is this a user that has registered with the site?
+	int unfocused = 0;// this is the counter for when site is blurred
+	var favorites; //will hold favorites playlist
+	var locID;
+	var locRID;
+	var favID;
+	HashMap playlists;
 	User(){
 		$.get('http://localhost:8888/user/getInfo', function(data) {
-        	if(data){
-				if(data.user) exists = true;
+        	if(data && data.success){
+				exists = true;
 				if(data.streetCredit) streetCredit = data.streetCredit;
+				if(data.lastLocation){
+					loadlocID = data.lastLocation;
+					if(data.lastRID) loadvidID = data.lastRID;
+				}
+				if(!data.noWelcome){
+					$("#interactiveDialog").html($('#instructions').html()).dialog({width:460}).dialog({height:380}).dialog('open');
+				}
+				if(data.lastLocation){
+					startingVideo = data.lastLocation;
+					if(data.lastRID) startingRID = data.lastRID;
+				}
+				$.get('http://localhost:8888/user/getPlaylists', function(data){
+					if(data.success){
+						favID = data.favId;
+						$.get('http://localhost:8888/user/getPlaylist',
+							{'playlistID': user.favID},
+							function(data) {
+								if(data && data['videos']) {
+									favorites = data['videos'];
+								} else console.log("error");
+							});
+					}
+				});				
 			}
         });
+	}
+	//
+	void setTimePos(int newTime){
+		if(curTime != newTime){
+			curTime = newTime;
+		}
+		//console.log('cur: '+curTime+'  new: '+newTime);
+	}
+	void resetCurCount(end){
+		if(locID){
+			var scData = {
+				_id:locID,
+				streetCreditTot:streetCredit,
+				streetCreditCur:curStreetCredit,
+				seconds:curTimeTotal
+			};
+			if(locRID) scData['RID'] = locRID;
+			$.post("http://localhost:8888/user/scUpdate", scData);
+		}
+		if(end) return;
+		curStreetCredit = 0;
+		curTime = 0;
+		locID = location._id;
+		if(location.list) locRID = location.list[playingVideo].RID;
+		else locRID = false;
+	}
+	//see if at new second - do things accordingly if that's the case
+	void setCurTime(int newTime){
+		//console.log('cur: '+curTime+'  new: '+newTime);
+		if(exists && curTime < floor(newTime)){
+			curTime++;
+			curTimeTotal++;
+			var multiple = 1;
+			if(location.list && location.list[playingVideo].streetcred)
+				multiple = location.list[playingVideo].streetcred;
+			else if(location.streetcred)
+				multiple = location.streetcred;
+			if(!focused){
+				if(unfocused == 9){
+					unfocused = 0;
+				}
+				else{
+					unfocused++;
+					return;
+				}
+			}
+			curStreetCredit += multiple;
+			streetCredit += multiple;
+		}
+	}
+	
+	void addFav(){
+		var newfav = {locationID:location._id,locTitle:location.title};
+		newfav['date'] = new Date();
+		if(location.list){
+			newfav.itemTitle = location.list[playingVideo].title;
+			newfav.RID = location.list[playingVideo].RID;
+		}
+		favorites.push(newfav);
+	}
+	
+	void removeFav(){
+		for(int i = 0; i < favorites.length; i++){
+			if(location._id == favorites[i].locationID){
+				if(location.list && playingVideo == favorites[i].RID){
+					favorites.splice(i,1);
+					break;
+				}
+				else if(location.ytid){
+					favorites.splice(i,1);
+					break;
+				}
+			}
+		}
 	}
 }
 
 /* menu that appears when a location is playing */
 class Toolbox{	
-	boolean overlay;
 	int HEART = 0;
 	int BASKET = 1;
 	int FACEREC = 2;
 	int LOGOUT = 3;
 	int ARTBIO = 4;
-	
+	int STREETCRED = 5;
+	int streetCredSize; //x length of street credit numerals
+	int streetCredRight; //right most point of street credit numerals
 	Toolbox(){
-		overlay = false;
 		toolHover =  -1; //what tool is currently hovered over? -1 = none
 		toolTop = PANEMINY; //where is the menu displayed?
 		toolFull = 40; // size of one tool
 		toolHalf = toolFull/2; //half the size of a tool spot (for easy computation below)
-		toolWidth = 200; // size of all tools together
+		toolWidth = toolFull*6; // size of all tools together
 		toolLeft = width/2 - toolWidth/2; //left most part of the toolbar
 	}
 	
 	//draw the menu
 	void draw(){
-		fill(0); stroke(255);
+		fill(0); stroke(255); textSize(24);
 		rectMode(CORNERS);
-		rect(toolLeft, toolTop, toolLeft+toolWidth, toolTop+toolFull);
+		streetCredSize = textWidth(user.streetCredit);//compute size of street credits
+		rect(toolLeft, toolTop, toolLeft+toolWidth+streetCredSize, toolTop+toolFull);
 		
 		shapeMode(CENTER);
-		if(location.list[playingVideo].fav) //draw either the unheart or heart icon
+		if(location && (location.fav || (location.list && location.list[playingVideo].fav))) //draw either the unheart or heart icon
 			shape(heart,toolLeft+toolHalf,toolTop+toolHalf,toolHalf+4, toolHalf+2);
 		else
 			shape(greyHeart,toolLeft+toolHalf,toolTop+toolHalf,toolHalf+4, toolHalf+2);
@@ -255,43 +387,54 @@ class Toolbox{
 		image(heartBasket,toolLeft+toolHalf*3,toolTop+toolHalf);
 		image(facebook, toolLeft+toolHalf*5, toolTop+toolHalf, toolFull -5, toolFull -5);
 		image(wikibio, toolLeft+toolHalf*7, toolTop+toolHalf);
-		image(logout, toolLeft+toolHalf*9, toolTop+toolHalf);
-		
+		image(streetCoins, toolLeft+toolHalf*9, toolTop+toolHalf);
+		fill(255); 
+		textAlign(LEFT,TOP);
+		text(user.streetCredit, toolLeft+toolHalf*10,toolTop+6);
+		streetCredRight = toolLeft+toolHalf*10+streetCredSize; // compute right side of street cred numbers
+		image(logout, streetCredRight+toolHalf, toolTop+toolHalf);
+
 		//see if any of the menu items are currently being hovered over by the mouse
 		//if so, draw the appropriate text info
-		if(mouseY>toolTop && mouseY<toolTop+toolFull&&mouseX>toolLeft&&mouseX<toolLeft+toolWidth){
+		if(mouseY>toolTop && mouseY<toolTop+toolFull&&mouseX>toolLeft&&mouseX<toolLeft+toolWidth+streetCredSize){
 			textSize(14); fill(0); stroke(255); rectMode(CORNERS);
 			if(mouseX<toolLeft+toolFull){//heart
 				var heartext;
-				if(location.list[playingVideo].fav) heartext = "Un-Heart Song";
+				if(location && (location.fav || (location.list && location.list[playingVideo].fav))) heartext = "Un-Heart Song";
 				else heartext = "Heart Song";
-				rect(toolLeft, toolTop-5, toolLeft+textWidth(heartext)+4,toolTop-25);
+				rect(toolLeft, toolTop-5, toolLeft+textWidth(heartext)+8,toolTop-25);
 				fill(255);
-				text(heartext,toolLeft+2,toolTop-23);
+				text(heartext,toolLeft+4,toolTop-23);
 				toolHover = HEART;
 			}
 			else if(mouseX>toolLeft+toolFull && mouseX<toolLeft+toolFull*2){//basket
-				rect(toolLeft+toolFull, toolTop-5, toolLeft+toolFull+textWidth('View HeartBasket')+4,toolTop-25);
+				rect(toolLeft+toolFull, toolTop-5, toolLeft+toolFull+textWidth('View HeartBasket')+8,toolTop-25);
 				fill(255);
-				text('View HeartBasket',toolLeft+toolFull+2,toolTop-23);
+				text('View HeartBasket',toolLeft+toolFull+4,toolTop-23);
 				toolHover = BASKET;
 			}
 			else if(mouseX>toolLeft+toolFull*2&&mouseX<toolLeft+toolFull*3){//facebook
-				rect(toolLeft+toolFull*2, toolTop-5, toolLeft+toolFull*2+textWidth('Recommend Song on Facebook')+4,toolTop-25);
+				rect(toolLeft+toolFull*2, toolTop-5, toolLeft+toolFull*2+textWidth('Recommend Song on Facebook')+8,toolTop-25);
 				fill(255);
-				text('Recommend Song on Facebook',toolLeft+toolFull*2+2,toolTop-23);
+				text('Recommend Song on Facebook',toolLeft+toolFull*2+4,toolTop-23);
 				toolHover = FACEREC;
 			}
 			else if(mouseX>toolLeft+toolFull*3&&mouseX<toolLeft+toolFull*4){//wikibio
-				rect(toolLeft+toolFull*3, toolTop-5, toolLeft+toolFull*3+textWidth('Artist Biography')+4,toolTop-25);
+				rect(toolLeft+toolFull*3, toolTop-5, toolLeft+toolFull*3+textWidth('Artist Biography')+8,toolTop-25);
 				fill(255);
-				text('Artist Biography',toolLeft+toolFull*3+2,toolTop-23);
+				text('Artist Biography',toolLeft+toolFull*3+4,toolTop-23);
 				toolHover = ARTBIO;
 			}
-			else if(mouseX>toolLeft+toolFull*4&&mouseX<toolLeft+toolFull*5){//wikibio
-				rect(toolLeft+toolFull*4, toolTop-5, toolLeft+toolFull*4+textWidth('Logout')+4,toolTop-25);
+			else if(mouseX>toolLeft+toolFull*4&&mouseX<streetCredRight){//logout code
+				rect(toolLeft+toolFull*4, toolTop-5, toolLeft+toolFull*4+textWidth('Street Credit')+8,toolTop-25);
 				fill(255);
-				text('Logout',toolLeft+toolFull*4+2,toolTop-23);
+				text('Street Credit',toolLeft+toolFull*4+4,toolTop-23);
+				toolHover = STREETCRED;
+			}
+			else if(mouseX>streetCredRight&&mouseX<streetCredRight+toolFull){
+				rect(streetCredRight, toolTop-5, streetCredRight+textWidth('Logout')+8,toolTop-25);
+				fill(255);
+				text('Logout',streetCredRight+4,toolTop-23);
 				toolHover = LOGOUT;
 			}
 		}
@@ -300,42 +443,81 @@ class Toolbox{
 	
 	void mouseClicked(){
 		switch(toolHover){
-			case(HEART):break;
-			/*console.log('heart');
-				if(location.list[playingVideo].fav){
-					$.get('http://localhost:8888/removeSong', { "songid": artist.RID+" "+artist.topTracks[playingSong].RID});
-					location.list[playingVideo].fav = false;
-				}
+			case HEART:
+				if(location){
+					if(location.list){
+						if(location.list[playingVideo].fav){
+							$.get('http://localhost:8888/user/removeVideo', 
+							{ 
+								"locationID": location._id,
+								"RID":location.list[playingVideo].RID,
+								"playlistID":user.favID
+							});
+							location.list[playingVideo].fav = false;
+							user.removeFav();
+						} //bo han
+						else{
+							$.get('http://localhost:8888/user/addVideo', 
+							{
+								"locationID": location._id,
+								"locTitle": location.title,
+								"RID":location.list[playingVideo].RID,
+								"itemTitle": location.list[playingVideo].title,
+								"playlistID":user.favID
+							});
+							location.list[playingVideo].fav = true;
+							user.addFav();
+						}
+					} else{
+						if(location.fav){
+							$.get('http://localhost:8888/user/removeVideo', 
+							{ 
+								"locationID": location._id,
+								"playlistID":user.favID
+							});
+							location.fav = false;
+							user.removeFav();
+						} //bo han
+						else{
+							$.get('http://localhost:8888/user/addVideo', 
+							{ 
+								"locationID": location._id,
+								"locTitle": location.title,
+								"playlistID":user.favID
+							});
+							location.fav = true;
+							user.addFav();
+						}
+					}
+				}break;
+			case BASKET:
+				if(!$('#overlay').dialog("isOpen"))
+					showFavorites('date', true);
 				else{
-					$.get('http://localhost:8888/addSong', { "songid": artist.RID+" "+artist.topTracks[playingSong].RID});
-					location.list[playingVideo].fav = true;
-				}*/
+					$('#overlay').dialog('close');
+				}
 				break;
-			case(BASKET):break;
-				showFavorites();
-				break;
-			case(LOGOUT):
+			case LOGOUT:
 				link('http://localhost:8888/logout');
 				break;
-			case(FACEREC):	break;
-			case(ARTBIO):
-				showBio();
-				break;
-		}
-	}
-	
-	// shows favorite box and loads the favorites
-	void showFavorites() {  
-		console.log('here');
-		if(overlay){
-			$('#overlay').dialog('close');
-			overlay = true;
-		}
-		else{
-          $.get('http://localhost:8888/seeSongs', function(data) {
-            $('#overlay').html(data).dialog('open');
-			overlay = false;
-          });
+			case FACEREC:
+				if(location){
+					var data = {type:location.type,locName:location.title,_id:location._id};
+					if(location.list){ data['subName'] = location.list[playingVideo].title;
+						data['RID'] = location.list[playingVideo].RID;
+					}
+					$.post('http://localhost:8888/user/fbRecommend',data);
+				}break;
+			case ARTBIO:
+				if(location){
+					showBio();
+				}break;
+			case STREETCRED:
+				if(!$('#streetCreditStore').dialog("isOpen"))
+					$('#streetCreditStore').dialog('open');
+				else{
+					$('#streetCreditStore').dialog('close');
+				}break;
 		}
 	}
 }
@@ -823,7 +1005,8 @@ class Forward extends Button{
   void mouseReleased()  {
     if(invert && pressedHere){
       //code to skip to next song
-      nextLocation();
+
+      videoEnded();
       invert = false;
     }
     pressedHere = false;
@@ -837,11 +1020,11 @@ class Forward extends Button{
     else{
       if(super.pressed()){
 		textSize(14);
-		var twidth = textWidth("Next Plot");
+		var twidth = textWidth("Next Video");
 		fill(0); stroke(255);
 		rect(x-twidth/2-3,y+15,x+twidth/2+3,y+35);
 		textAlign(CENTER,TOP);
-        fill(255); text("Next Plot",x,y+17);
+        fill(255); text("Next Video",x,y+17);
 		noFill();
 	}
       else{
@@ -865,7 +1048,6 @@ class Forward extends Button{
 
 //iterate onto the next video in the list. this should be used if we ever create a "next song" button
 void createNext(){
-  stopVideo();
   if(playingVideo < location.list.length-1){//if there are more videos left in the list, play them
   	playingVideo++;
 	loadVideo();
@@ -1110,6 +1292,12 @@ not in use. if it gets used in the future, the code is already here in commented
 	void previousPage(){
 		pageToShow--;
 	}
+	void setToRightPage(){ //make sure the playing video is displayed.
+		if(location && location.list){
+			while(playingVideo >= (pageToShow+1)*vidsToShow)
+				pageToShow++;
+		}
+	}
 
 	//print location information
 	void printLocation(){
@@ -1254,8 +1442,7 @@ class Current{
     dragVol();
   }
 
-  void mouseReleased()
-  {
+  void mouseReleased(){
     play.mouseReleased();
     ffwd.mouseReleased();
     releaseSeekBar();
@@ -1420,7 +1607,8 @@ class Current{
 		  }
 		  else{
 			int seekPosition = (int)map(mouseX,seekLeft,seekRight, 0, player.getDuration());
-	          player.seekTo(seekPosition, true);
+	          user.setTimePos(floor(seekPosition));//street credit stuff
+			  player.seekTo(seekPosition, true);
 			  if(!songPausedToBeginWith)
 	            player.playVideo();
 			} 
@@ -1510,6 +1698,7 @@ class Current{
 		else if(playMode == VIDEO){
 			total = player.getDuration();
 			totTime = makeTime(total);
+			user.setCurTime(player.getCurrentTime());
 			curTime = makeTime(player.getCurrentTime());
 	        x = map(player.getCurrentTime(), 0, total, seekLeft, seekRight);
 	        
@@ -1552,9 +1741,13 @@ String makeTime(float time){
 
 //called when a video ends - creates next video
 void videoEnded(){
-	if(location.list && playingVideo < location.list.length-1){
+	if(isPlaylist && ++curPos < user.favorites.length){
+		playVideo(curPos); 
+	}
+	else if(location.list && playingVideo < location.list.length-1){
 	  	playingVideo++;
 		loadVideo();
+		sidePane.setToRightPage();
 	} else
 		nextLocation();
 }
@@ -1576,25 +1769,29 @@ void prepPlayer(){
 	player.setVolume(volume);
 	if(locations.size() > 0) startMusic();
 }
-
+var startingVideo = 'nL3IpxX2XB'; //starting video - jayZ
+var startingRID = 0; //starting sub (if it exists)
 void startMusic(){
   var pathArray = window.location.pathname.split('/');
-  var locID, vidID;
+  var loadlocID, loadvidID;
   if(pathArray[1] == "l"){
-    locID = pathArray[2];
-    vidID = pathArray[3];
+    loadlocID = pathArray[2];
+    loadvidID = pathArray[3];
   }
-  else  locID = "nL3IpxX2XB";
+  else{
+	loadlocID = startingVideo;
+	loadvidID = startingRID;
+  }	
 
     for(int i = 0; i < locations.size(); i++){
-	  if(locations.get(i)._id==locID){
+	  if(locations.get(i)._id==loadlocID){
 		  location = locations.get(i);
-		  if(vidID && location.list){
+		  if(loadvidID && location.list){
 		    for(int j = 0; j < location.list.length; j++){
-		      if(location.list[j].RID == vidID){
+		      if(location.list[j].RID == loadvidID){
 				playingVideo = j;
 				setNewMapLocation(location.x,location.y);
-				loadVideo(); sidePane.resetSize();
+				loadVideo(); sidePane.resetSize(); sidePane.setToRightPage();
 				//showBio();
 				break;
 		      }
@@ -1602,7 +1799,7 @@ void startMusic(){
 		  } else{
 		    playingVideo = 0;
 			setNewMapLocation(location.x,location.y);
-		    loadVideo(); sidePane.resetSize();
+		    loadVideo(); sidePane.resetSize(); sidePane.setToRightPage();
 			//showBio();
 		  }
 		break;
@@ -1617,43 +1814,74 @@ void setNewMapLocation(x,y){
 	miniMidY = map(midY,0,ygrid,0,270);
 	nyc.setMins();
 }
-boolean playedSomething = false;//bool var to check if one thing has been played or not
-//load new video using global parameters
-void loadVideo(){
-	if(!playedSomething){
-		playedSomething = true;
-	}else if(!user.exists){
-		link('http://localhost:8888/logN');
+boolean playedSomething = 0;//for non-users
+void checkFav(){
+	for(int i = 0; i < user.favorites.length; i++){
+		if(location._id == user.favorites[i].locationID){
+			if(location.list && playingVideo == user.favorites[i].RID){
+				location.list[playingVideo].fav = true;
+				break;
+			}
+			else if(location.ytid){
+				location.fav = true;
+				break;
+			}
+		}
 	}
+}
+//load new video using global parameters
+void loadVideo(pl,pos){
+	if(!user.exists){
+		if(!playedSomething){
+			$("#interactiveDialog").html($('#welcome1').html()).dialog({width:540}).dialog({height:300}).dialog('open');
+		}
+		playedSomething = (++playedSomething)%4; 
+	}else user.resetCurCount();
    	if(location.list && location.list.length > 0){
 	    player.loadVideoById(location.list[playingVideo].ytid);
+		if(user.favorites) checkFav();
 		$.ajax({//increase the viewcount on the server
 			url: "http://localhost:8888/loc/view",
 			data: {_id:location._id,position:playingVideo,city:'NYC'}
 		});
-	    //updateToolbox(location.list[playingVideo].RID, location._id, location.list[playingVideo].title, location.title);
+		updatePageInfo(location._id,location.title, location.list[playingVideo].RID,location.list[playingVideo].title);
 	  }
 	else if(location.ytid){
+		if(user.favorites) checkFav();
 		player.loadVideoById(location.ytid);
 		$.ajax({//increase the viewcount on the server
 			url: "http://localhost:8888/loc/view",
 			data: {_id:location._id,city:'NYC'}
 		});
-		//updateToolbox();
+		updatePageInfo(location._id,location.title);
 	 //$("#ytplayer").html("<p>Couldn't find this song on YouTube</p>");
 	}
-/*	FAV FAV FAV
+	if(pl){//is this being played from a playlist?
+		isPlaylist = true;
+		curPos = pos;
+	}
+	else
+		isPlaylist = false;
+	/*check to see if currently loaded song is 
 	
-	$.get('http://localhost:8888/isFav', {'songid': artist.RID + " " + artist.topTracks[playingSong].RID}, function(data){
-		if(data.value)
-			artist.topTracks[playingSong].fav = true;
-	});*/
+	
+	
+	OMG
+	
+	
+	WORK FOR SAMI
+	
+	
+	
+	in favorites list or not
+	*/
 }
 
 //play a video using id (and if included/appropriate) position in list provided
-void playVideo(newlocation, newsub){
+void playVideo(pos){
 	var newloc;
-	if(newlocation == location._id)
+	var newlocation = user.favorites[pos].locationID;
+	if(location && newlocation == location._id)
 		newloc = false;
 	else
 		newloc = true;
@@ -1666,20 +1894,98 @@ void playVideo(newlocation, newsub){
 			miniMidX = map(midX,0,xgrid,0,284);
 			miniMidY = map(midY,0,ygrid,0,270);
 			nyc.setMins(); 			
-      if(newsub && location.list){
+      if(user.favorites[pos].RID && location.list){
 	for(int j = 0; j < location.list.length; j++){
-	  if(location.list[j].RID == newsub){
+	  if(location.list[j].RID == user.favorites[pos].RID){
 	    playingVideo = j;
-	    loadVideo(); if(newloc){sidePane.resetSize();sidePane.resetPage();}//if(newloc)showBio();
+	    loadVideo(true,pos); if(newloc){sidePane.resetSize();sidePane.resetPage();sidePane.setToRightPage();}//if(newloc)showBio();
 	  }
 	}
       }
       else{
 	playingVideo = 0;
-	loadVideo(); if(newloc){sidePane.resetSize();sidePane.resetPage();}//if(newart)showBio();
+	loadVideo(true,pos); if(newloc){sidePane.resetSize();sidePane.resetPage();sidePane.setToRightPage();}//if(newart)showBio();
       }
     }
   }
+}
+
+// shows favorite box and loads the favorites
+// the playlist could be cached to reduce server requests?
+void showFavorites(sortBy, ascending) {
+	var outHtml = generateHTML(user.favorites, sortBy, ascending);
+	$('#overlay').html(outHtml).dialog('open');
+	//create html for favorites overlay
+	function generateHTML(videos, sortBy, ascending) {
+		var arrow,arrowshape;
+
+		if(ascending)
+			arrowshape = " &#x25B2;";
+		else
+			arrowshape = " &#x25BC;";
+
+		var outHtml = '<table id="userFavs"><thead><tr><td></td><td><a href="javascript:void(0)" onclick="showAndFillOverlay(\'locTitle\',';
+
+		if(sortBy == 'locTitle') { outHtml += !ascending; arrow = arrowshape; }
+		else { outHtml += true; arrow = "";}
+
+		outHtml += ',\''+user.favID+'\')">Video'+arrow+'</a></td>';/*'<td><a href="javascript:void(0)" onclick="showAndFillOverlay(\'itemTitle\',';
+
+		if(sortBy == 'itemTitle') { outHtml += !ascending; arrow = arrowshape; }
+		else { outHtml += true; arrow = ""; }
+
+		outHtml += ',\''+user.favID+'\')">Item Title'+arrow+'</a></td>'*/outHtml +='<td><a href="javascript:void(0)" onclick="showAndFillOverlay(\'date\',';
+
+		if(sortBy == 'date') { outHtml += !ascending; arrow = arrowshape; }
+		else { outHtml += true; arrow = ""; }
+
+		outHtml += ',\''+user.favID+'\')">Date'+arrow+'</a></td></tr></thead><tbody>';
+
+		videos.sort(function(a, b) {
+			var out;
+			var compareA; var compareB;
+			switch(sortBy) {
+				case 'locTitle':
+					compareA = a.locTitle; compareB = b.locTitle;
+					break;
+				/*case 'itemTitle':
+					compareA = a.itemTitle; compareB = b.itemTitle;
+					break;*/
+				case 'date':
+					compareA = a.date; compareB = b.date;
+					break;
+			}
+			if(compareA > compareB) out = 1;
+			else if(compareA < compareB) out = -1;
+			else out = 0;
+
+			if(ascending) return out;
+			else return out * -1;
+		});
+		for(var i = 0; i < videos.length; i++) {
+			var video = videos[i];
+			var date = new Date(video['date']);
+			outHtml += '<tr><td><a href="javascript:void(0)" onclick="toggleFav(this, \''+video['locationID']+'\',\''+video['RID']+'\',\''+user.favID+'\')"><img src="http://localhost:8888/heart.svg" width="20" height="20" border="0" /></a></td>';
+			outHtml += '<td><a href="javascript:void(0)" onclick="playVideo('+i+')">' + video['locTitle'];
+			if(video['itemTitle']) outHtml += '</a><br />&nbsp;-&nbsp;&nbsp;<a href="javascript:void(0)" onclick="playVideo('+i+')">' + video['itemTitle'];
+			outHtml += '</a></td>';
+			//outHtml += '<td><a href="javascript:void(0)" onclick="playVideo('+i+')">'  + '</a></td>';
+			outHtml += '<td>' + (date.getMonth() + 1) + "/" + date.getDate() + "/" + date.getFullYear() + '</td>';
+			outHtml += '</tr>';	
+		}
+		outHtml += '</tbody></table>';
+
+		return outHtml;
+	}
+}
+
+function updatePageInfo(locID, locName, RID, subName) {   // updates toolbox
+  	var newtitle = "RapCities Alpha - " + locName;
+ 	if(subName) newtitle += ' - - ' + subName;
+	document.title = newtitle;
+	var newurl = "http://localhost:8888/l/"+locID;
+	if(RID) newurl += "/"+RID;
+	window.history.pushState(newtitle,null,newurl);
 }
 
 //prep the bio of the current artist -- not currently in use.

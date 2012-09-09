@@ -16,6 +16,7 @@ module.exports = function fileServer(maxage){
   var maxAge = maxage || 86400000;
 
   return function fileServer(req, res, next){
+	var found = true;
     if(req.socket.remoteAddress || req.socket.socket.remoteAddress == '127.0.0.1'){
     
     switch(req.url){
@@ -35,19 +36,8 @@ module.exports = function fileServer(maxage){
         break;
       case('/'):
 	  case('/#_=_'):
-      case('/hennessy'):
-	  case('/smirnoff'):
-	  case('/greygoose'):
-	case('/ciroc'):
-	case('/crownroyal'):
-	case('/baileys'):
-	case('/moet'):
-	case('/belvedere'):
-	case('/bacardi'):
-	//culture
-	case('/culture'):
         if (files.index) sendfile('index',true);
-        else readfile('/files/index.html','text/html; charset=utf-8','index',true);
+        else readfile('/files/html/index.html','text/html; charset=utf-8','index',true);
         break;
       case('/processing-1.3.6.min.js'):
         if (files.processingmin) sendfile('processingmin',true);
@@ -62,13 +52,13 @@ module.exports = function fileServer(maxage){
         else readfile('/files/lib/soundmanager2.swf','application/x-shockwave-flash','sm2f',false)
         break;
 	  case('/upl0dder'):
-	 	if(req.user == '4fe486215a805bcf53000001' || req.user == '4fe77c671588a57e47000001' || req.user == '4fe42f6ecef89ced3d000004' || req.user == '4fe23f9b363283a404000001'){
+	 	if(req.user == '5045995f584b7f9d02000001' || req.user == '4fe77c671588a57e47000001' || req.user == '4fe42f6ecef89ced3d000004' || req.user == '4fe23f9b363283a404000001'){
 			if (files.upl0dder) sendfile('upl0dder',true);
 			else readfile('/files/locs/upload.html','text/html','upl0dder',true)
 	      }
 		  break;
 	  case('/pl0dder'):
-	 	if(req.user == '4fe486215a805bcf53000001' || req.user == '4fe77c671588a57e47000001' || req.user == '4fe42f6ecef89ced3d000004' || req.user == '4fe23f9b363283a404000001'){
+	 	if(req.user == '5045995f584b7f9d02000001' || req.user == '4fe77c671588a57e47000001' || req.user == '4fe42f6ecef89ced3d000004' || req.user == '4fe23f9b363283a404000001'){
 			if (files.pl0dder) sendfile('pl0dder',true);
 			else readfile('/files/locs/uploader.html','text/html','pl0dder',true)
 		}
@@ -94,47 +84,66 @@ module.exports = function fileServer(maxage){
 	    else readfile('/files/images/ui-bg_highlight-soft_75_000000_1x100.png','image/png','bg1',false)
 	    break;
 	  case('/heart.svg'):
-          if (files.heart) sendfile('heart');
-		  else readfile('/files/icons/heart.svg', 'image/svg+xml', 'heart', false);
-          break;
-        case('/greyHeart.svg'):
-          if (files.greyHeart) sendfile('greyHeart');
-          else readfile('/files/icons/greyHeart.svg', 'image/svg+xml', 'greyHeart', false);
-          break;
-		 case('/processing.js'):
-			if (files.processingjs) sendfile('processingjs',true);
-          	else readfile('/files/lib/processing.js', 'text/javascript', 'processingjs', true);
-          	break;
-		  case('/logo'):
-			if (files.logo) sendfile('logo');
-        	else readfile('/files/images/logo.png', 'image/png', 'logo', false);
-        	break;
-		  case('/info'):
-			if (files.info) sendfile('info');
-        	else readfile('/files/icons/info.png', 'image/png', 'info', false);
-        	break;
-		  case('/facebook'):
-			if (files.facebook) sendfile('facebook');
-        	else readfile('/files/icons/facebook.png', 'image/png', 'facebook', false);
-        	break;
-	      case('/exit.png'):
-			if (files.exit) sendfile('exit');
-        	else readfile('/files/icons/exit.png', 'image/png', 'exit', false);
-        	break;
-	      case('/wikibio.png'):
-			if (files.wikibio) sendfile('wikibio');
-        	else readfile('/files/icons/wikibio.png', 'image/png', 'wikibio', false);
-        	break;
-		  case('/heartbasket.png'):
-			if (files.heartbasket) sendfile('heartbasket');
-        	else readfile('/files/icons/heartbasket.png', 'image/png', 'heartbasket', false);
-        	break;
-		  case('/miniNYC.png'):
-			if (files.miniNYC) sendfile('miniNYC');
-        	else readfile('/files/images/miniNYC.png', 'image/png', 'miniNYC', false);
-        	break;
-
-      default: next();
+        if (files.heart) sendfile('heart');
+		else readfile('/files/icons/heart.svg', 'image/svg+xml', 'heart', false);
+	    break;
+	  case('/greyHeart.svg'):
+		if (files.greyHeart) sendfile('greyHeart');
+	    else readfile('/files/icons/greyHeart.svg', 'image/svg+xml', 'greyHeart', false);
+	    break;
+	  case('/processing.js'):
+		if (files.processingjs) sendfile('processingjs',true);
+       	else readfile('/files/lib/processing.js', 'text/javascript', 'processingjs', true);
+       	break;
+	  case('/logo'):
+		if (files.logo) sendfile('logo');
+       	else readfile('/files/images/logo.png', 'image/png', 'logo', false);
+       	break;
+	  case('/fblogo'):
+		if (files.fblogo) sendfile('fblogo');
+       	else readfile('/files/images/fblogo.png', 'image/png', 'fblogo', false);
+       	break;
+	  case('/info'):
+		if (files.info) sendfile('info');
+       	else readfile('/files/icons/info.png', 'image/png', 'info', false);
+       	break;
+	  case('/whatisRC.png'):
+		if (files.whatisrc) sendfile('whatisrc');
+       	else readfile('/files/images/whatisrc.png', 'image/png', 'whatisrc', false);
+       	break;
+	  case('/welcomeFB.png'):
+		if (files.welcomeFB) sendfile('welcomeFB');
+       	else readfile('/files/images/welcomeFB.png', 'image/png', 'welcomeFB', false);
+       	break;
+	  case('/storePreview.png'):
+		if (files.storePreview) sendfile('storePreview');
+       	else readfile('/files/images/storePreview.png', 'image/png', 'storePreview', false);
+       	break;
+	  case('/facebook'):
+		if (files.facebook) sendfile('facebook');
+       	else readfile('/files/icons/facebook.png', 'image/png', 'facebook', false);
+       	break;
+      case('/exit.png'):
+		if (files.exit) sendfile('exit');
+       	else readfile('/files/icons/exit.png', 'image/png', 'exit', false);
+       	break;
+	  case('/streetCoins.jpg'):
+		if(files.streetCoins) sendfile('streetCoins');
+		else readfile('/files/icons/streetCoins.jpg','image/jpg','streetcoins',false);
+		break;
+      case('/wikibio.png'):
+		if (files.wikibio) sendfile('wikibio');
+       	else readfile('/files/icons/wikibio.png', 'image/png', 'wikibio', false);
+       	break;
+	  case('/heartbasket.png'):
+		if (files.heartbasket) sendfile('heartbasket');
+       	else readfile('/files/icons/heartbasket.png', 'image/png', 'heartbasket', false);
+       	break;
+	  case('/miniNYC.png'):
+		if (files.miniNYC) sendfile('miniNYC');
+       	else readfile('/files/images/miniNYC.png', 'image/png', 'miniNYC', false);
+       	break;
+	  default: found = false;
     } 
 	
 	  var folder,contentType;
@@ -144,10 +153,12 @@ module.exports = function fileServer(maxage){
       var strippedString = requrl.replace('/', '');
       if(files[strippedString]) sendfile(strippedString)
       else readfile('/files' + requrl, 'text/css', strippedString, true);
+		found = true;
     } else if(requrl.indexOf('/js/') == 0) {
       var strippedString = requrl.replace('/', '');
       if(files[strippedString]) sendfile(strippedString)
       else readfile('/files' + requrl, 'text/javascript', strippedString, true);
+		found = true;
     } /*else if(requrl.indexOf('/song/') == 0){ //songID
 		res.writeHead(302, {'location':'http://rapcities.com'});
 		res.end();
@@ -195,7 +206,7 @@ module.exports = function fileServer(maxage){
             res.end(content);
           }
         });
-      }
+      }else if(!found) next();
     
 }
  //icon, index, sm2, sm2f, sm2f9, processing, info, fbook, ytube;   

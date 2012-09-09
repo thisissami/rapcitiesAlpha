@@ -13,7 +13,6 @@ dbConnector.open(function(err, DB){
     }
     else{
       db = DB;
-      console.log('opened successfully');
       db.createCollection('cities', function(err, city){
       if(err){
         console.log('oh shit! db.createCollection error!');
@@ -38,7 +37,7 @@ dbConnector.open(function(err, DB){
 							});
 						}
 						else
-							console.log(' locations + types created');
+							console.log('locs now exists');
 					});					
 				}
 			});	
@@ -115,6 +114,56 @@ function newType(req, res){
 	});	
 }
 
+function createAnalogue(req,res){
+	var newtype = req.body;
+	gridStore.exist(db, 'typeIcon/'+newtype._id, function(err, exists){
+		if(exists){
+			returnError(res,'Type with this ID already exists. Please choose a different abbreviation and make sure you aren\'t duplicating anything.');
+		}
+		else{
+			types.findOne({_id:newtype.parent}, function(err, parent){
+				if(err) returnError(res,'Issue finding parent type.');
+				else{
+					newtype.list = parent.list;
+					if(parent.fields)
+						newtype.fields = parent.fields;
+					newtype.mediaType = parent.mediaType;
+					newtype.r = parseInt(newtype.r);
+					newtype.g = parseInt(newtype.g);
+					newtype.b = parseInt(newtype.b);
+					var GS = new gridStore(db, 'typeIcon/'+newtype._id, 'w', {'content_type':req.files.icon.type});
+					GS.open(function(err, gs){
+						if(err){returnError(res, 'gs open failure: '+err.message)}
+						else{
+							gs.writeFile(req.files.icon.path, function(err, obj){
+								if(err){returnError(res, 'gs write failure: '+err.message)}
+								else{
+									GS.close(function(err, result){
+										if(err)returnError(res,'gs close error: '+ err.message);
+										else{
+										types.insert(newtype,{safe:true},function(err,doc){
+											if(err)returnError(res,'type insertion failure\n'+err.message);
+											else{
+												types.update({'_id':parent._id},{$push: {'analogues':doc._id}}, function(err){
+													if(err) returnError(res,'Parent Pushing failure - THIS IS REALLY IMPORTANT. LET SAMI KNOW IMMEDIATELY, AND DO NOT DO WHAT YOU JUST DID AGAIN\n\n'+err.message);
+													else{
+														console.log(doc);
+														returnSuccess(res);
+													}
+												});
+											}
+										});
+									}});
+								}
+							});
+						}
+					});
+				}
+			});
+		}
+	});	
+}
+
 function editType(req, res){
 	//console.log(req.body);
 	if(req.files && req.files.icon){
@@ -162,6 +211,12 @@ function nl2br (str, is_xhtml) {
 	return (str + '').replace(/[^>]([^>\r\n]?)(\r\n|\n\r|\r|\n)/g, '$1'+ breakTag +'$2');
 }
 
+function deleteLoc(req,res){
+	locs[req.query.city].findAndModify({_id:req.query._id},[['_id','asc']],{},{remove:true},function(err){
+		if(err){returnError(res,'Error removing:\n\n'+err.message)}
+		else returnSuccess(res);
+	});
+}
 function newLoc(req, res){
 	var newloc = req.body;
 	newloc['_id'] = shortID.generate();
@@ -192,6 +247,9 @@ function editLoc(req,res){
 				else loc.visible = false;
 				if(loc.bio){
 					loc.bio = nl2br(loc.bio,true);
+				}
+				if(doc.alternate && !loc.alternate){
+					loc.alternate = doc.alternate;
 				}
 				if(loc.list){
 					if(loc.listnum){
@@ -323,9 +381,39 @@ function returnBrowse(err,docs,res){
 }
 
 function getTypes(req, res){
-	types.find({}).toArray(function(err,lestypes){
-		if(err) returnError(res,'Error getting types: '+err.message)
-		else {
+	console.log(req.query);
+	if(req.query.noAnalogues)
+		returnTypes(res,{'parent':{$exists:false}});
+	else if(req.query.analogue){
+		types.findOne({_id:req.query.analogue},function(err,obj){
+			if(err)
+				returnError(res,'Error finding parent'+err.message);
+			else if(obj.parent)
+				returnTypes(res,{'parent':obj.parent},true);
+			else
+				returnTypes(res,{'parent':obj._id},true);
+		});
+	}
+	else returnTypes(res,{});
+}
+
+function returnTypes(res, findata,parent){
+	console.log(findata);
+	types.find(findata).toArray(function(err,lestypes){
+		if(err) returnError(res,'Error getting types: '+err.message);
+		else if(parent){
+			types.findOne({_id:findata.parent},function(err,parent){
+				if(err) returnError(res,'Error finding parent 2: '+err.message);
+				else if(!parent) returnError(res,'couldnt find parent...');
+				else{
+					lestypes.unshift(parent);
+					var returnable = {'types':lestypes}
+					res.writeHead(200, {'Content-Type':'application/json'});
+					res.end(JSON.stringify(returnable));
+				}
+			});
+		}
+		else{
 			var returnable = {'types':lestypes}
 			res.writeHead(200, {'Content-Type':'application/json'});
 			res.end(JSON.stringify(returnable));
@@ -545,6 +633,7 @@ function lerp(min, max, i){
     }
 }*/
 
+exports.createAnalogue = createAnalogue;
 exports.newType = newType;
 exports.getTypes = getTypes;
 exports.getTypeIcon = getTypeIcon;
@@ -553,6 +642,7 @@ exports.newLoc = newLoc;
 exports.searchLoc = searchLoc;
 exports.browseLoc = browseLoc;
 exports.editLoc = editLoc;
+exports.deleteLoc = deleteLoc;
 exports.editLocation = editLocation;
 exports.view = view;
 exports.editType = editType;
